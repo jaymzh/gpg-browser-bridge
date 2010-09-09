@@ -1,0 +1,60 @@
+<!--
+ * Copyright 2010, Google Inc.
+ *
+ * ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is the GPG Browser Bridge.
+ *
+ * The Initial Developer of the Original Code is Google Inc.
+ *
+ * Portions created by the Initial Developer are Copyright (C) 2010
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Phil Dibowitz <fixxxer@google.com>
+ *   Fredrik Roubert <roubert@google.com>
+ *   Phil Ames <philames@google.com>
+ *
+ * ***** END LICENSE BLOCK *****
+ -->
+<html>
+  <head>
+    <title>GPG JavaScript Bridge Options</title>
+  </head>
+  <script type="text/javascript">
+    function saveOptions() {
+      var gpgBinaryPath = document.getElementById('gpg_binary_path').value;
+      var gpgKeyId = document.getElementById('gpg_key_id').value;
+
+      localStorage['gpg_binary_path'] = gpgBinaryPath;
+      localStorage['gpg_key_id'] = gpgKeyId;
+      localStorage['gpg_last_updated'] = new Date();
+    }
+
+    function restoreOptions() {
+      var gpgBinaryPath = localStorage['gpg_binary_path'];
+      document.getElementById('gpg_binary_path').value = gpgBinaryPath || '';
+
+      var gpgKeyId = localStorage['gpg_key_id'];
+      document.getElementById('gpg_key_id').value = gpgKeyId || '';
+    }
+  </script>
+  <body onLoad='restoreOptions()'>
+    <p>Path to GPG Binary: <input type='text' name='gpg_binary_path'
+      id='gpg_binary_path' /></p>
+    <p>Preferred Key ID: <input type='text' name='gpg_key_id' id='gpg_key_id'
+      placeholder='00000000' /></p>
+      <p><button onclick='saveOptions()'>Save</button></p>
+  </body>
+</html>

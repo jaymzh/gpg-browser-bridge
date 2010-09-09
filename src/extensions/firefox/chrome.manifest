@@ -1,0 +1,4 @@
+content	gpg	content/
+overlay chrome://browser/content/browser.xul chrome://gpg/content/overlay.xul
+locale	gpg	en-US	locale/en-US/
+skin	gpg	classic/1.0	skin/

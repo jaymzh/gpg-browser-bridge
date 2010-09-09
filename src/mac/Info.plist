@@ -1,0 +1,62 @@
+<!--
+ * Copyright 2010, Google Inc.
+ *
+ * ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is the GPG Browser Bridge.
+ *
+ * The Initial Developer of the Original Code is Google Inc.
+ *
+ * Portions created by the Initial Developer are Copyright (C) 2010
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Phil Dibowitz <fixxxer@google.com>
+ *   Fredrik Roubert <roubert@google.com>
+ *   Phil Ames <philames@google.com>
+ *
+ * ***** END LICENSE BLOCK *****
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundlePackageType</key>
+	<string>BRPL</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en-US</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleVersion</key>
+	<string>1.0</string>
+	<key>CFBundleIdentifier</key>
+	<string>org.mozilla.gpgPlugin</string>
+	<key>CFBundleName</key>
+	<string>Gpg</string>
+	<key>CFBundleExecutable</key>
+	<string>libnpgnupg.dylib</string>
+	<key>WebPluginMIMETypes</key>
+	<dict>
+		<key>application/gpg</key>
+		<dict>
+			<key>WebPluginTypeDescription</key>
+			<string>Gnupg Plugin</string>
+		</dict>
+	</dict>
+	<key>WebPluginDescription</key>
+	<string>GnuPG Plugin</string>
+	<key>WebPluginName</key>
+	<string>GnuPG Plugin</string>
+</dict>
+</plist>

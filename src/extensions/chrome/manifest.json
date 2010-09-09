@@ -1,0 +1,16 @@
+{
+  "name": "GPG JavaScript Bridge",
+  "version": "1.0",
+  "description": "GPG JavaScript Bridge",
+  "background_page": "background.html",
+  "options_page": "options.html",
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["gpg_script.js"]
+    }
+  ],
+  "plugins": [
+    { "path": "libnpgnupg.so", "public": false }
+  ]
+}

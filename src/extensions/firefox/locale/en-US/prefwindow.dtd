@@ -1,0 +1,7 @@
+<!ENTITY prefwindow.title 'GPG JavaScript Bridge preferences'>
+<!ENTITY pane1.title 'GPG JavaScript Bridge preferences'>
+<!ENTITY gpg_apply_button.label 'Apply Changes'>
+<!ENTITY gpg_binary_path.label 'Path to GPG Binary'>
+<!ENTITY gpg_binary_path.accesskey 'P'>
+<!ENTITY gpg_key_id.label 'Preferred GPG Key ID'>
+<!ENTITY gpg_key_id.accesskey 'K'>
