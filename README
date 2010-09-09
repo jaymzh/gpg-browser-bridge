@@ -1,0 +1,124 @@
+======== INSTALLATION INSTRUCTIONS ========
+
+LINUX
+
+0. Prereqs
+   You will need to have the following installed:
+   - scons
+   - libnspr4-dev
+   - GnuPG
+
+1. Build the plugin
+   $ cd src && scons
+
+2. Install the plugin
+   $ sudo cp libnpgnupg.so /path/to/firefox/plugins
+   (e.g., ~/.mozilla/plugins)
+
+3. Check the installation
+   Open firefox, go to "about:plugins" and ensure it's there
+
+4. Test
+   See http://www/~fixxxer/gpg_test/gpg_test.html
+
+
+MAC
+
+0. Prereqs
+   You will need the following installed:
+   - XCode (or some other way of getting g++ and friends)
+   - scons
+   - GnuPG
+
+   MacPorts is your best bet for scons.
+   GnuPG can be had from http://macgpg.sourceforge.net/ or from MacPorts.
+
+   *If* your gpg binary is somewhere other than /opt/local/bin/gpg, you will
+   need to edit line 83 of src/gnupg.cc and change this:
+
+   #define GPG_PATH "/opt/local/bin/gpg"
+
+   to match wahtever your path is.
+
+1. Build the plugin
+   $ cd src && scons
+
+2. Install the plugin
+   $ pushd ~/Library/Internet\ Plugins/
+   $ mkdir -p gpg.plugin/Contents/MacOS
+   $ popd
+   $ cp mac/Info.plist ~/Library/Internet\ Plugins/gpg.plugin/Contents
+   $ cp libnpgnupg.dylib ~/Library/Internet\ Plugins/gpg.plugin/Contents/MacOS
+
+3. Check the installation
+   - Firefox:
+     Open firefox, go to "about:plugins" and ensure it's there
+   - Safari:
+     Open safari, go to Help -> Installed Plugins, and ensure it's there
+
+4. Test
+   See http://www/~fixxxer/gpg_test/gpg_test.html
+
+
+WINDOWS
+
+There is currently no windows support. The biggest problem is that we use
+fork()+exec()+pipe() for IPC which isn't natively available in Windows.
+
+Writing a Windows version of CallGpg() and a matching call to ReadAllGpgOuput()
+and friends (plus adjusting any callers) should be all that's really required.
+
+
+UNITTESTS
+
+If you have gmock and gtest available, you can build unittests with
+  $ scons gnupg_unittest
+
+And then run them with:
+  # ./gnupg_unittest
+
+BROWSER EXTENSION
+
+In order for the plugin to work, it is also necessary to install the
+appropriate browser extension (located in src/extensions/firefox/ or
+src/extensions/chrome).
+
+To install the Firefox extension without building an XPI, in your
+Mozilla profile directory (which will look something like
+~/.mozilla/firefox/6711k3x8.default/extensions/) create a file named
+'gpg@google' and for the file contents, put the path to the extension, a single
+line such as: /home/user/gpg/opensource/gpg_plugin/src/extensions/firefox/.
+You will also need to copy the 'common/gpg_common.js' file to the 'contents/'
+directory in Firefox.
+
+To create an XPI, run the 'package-firefox.sh' script and then in Firefox,
+click 'File->Open' and navigate to the created gpg.xpi.
+
+To install the Chrome extension, launch Chrome and enter chrome://extensions in
+the address bar.  Ensure that Developer Mode is enabled, and then click the
+'Load Unpacked Extension' button.  Select the directory that contains the
+Chrome extension files.  Please also ensure that you have placed a compiled
+version of libnpgnupg.so (or equivalent) in the extension directory, as well
+as the 'common/gpg_common.js' script.  To create a crx file, once you have
+loaded the unpacked extension, you can click 'pack extension' from the
+chrome://extensions/ page.
+
+There are some known limitations between Chrome/Firefox.  Neither browser
+seems to support dispatching events/passing messages between pages loaded
+from a file:// origin.  On Firefox, the event is properly dispatched and
+the extension code can see that it would have to post a message back to
+a file:// page and create an alert() box telling the user that their operation
+has failed, but on Chrome, the message does not appear to be dispatched to
+the extension.
+
+Additionally, on Chrome, the path to the GPG binary must be typed in manually
+in the options page.  In Firefox, an (undocumented) input control is used to
+allow the user to have a "File Chooser" dialog (which allows retrieval of the
+full filesystem path), but on Chrome, use of an <input type="file"> tag will
+only result in the filename ("gpg") being accessible and not its full
+filesystem path ("/usr/bin/gpg").
+
+======== FURTHER DOCUMENTATION ========
+
+See http://wiki/Main/GMailPgpBrowserPlugin
+

@@ -1,0 +1,70 @@
+<html>
+<head>
+<title></title>
+</head>
+<script src="gpg_test.js"></script>
+<body onload="pageInit();">
+
+<object type='application/gpg' id='embed2' width='0' height='0'> </object>
+
+<table>
+  <tr>
+    <td>Key ID (to override or supplement preferred key) - use csv for multiple
+      keys:</td>
+    <td><input type="text" name="keyid" id="keyid"></td>
+  </tr>
+  <tr>
+    <td>Plaintext (encryption/decryption)</td>
+    <td><textarea rows="10" cols="80" name="plaintext"
+        id="plaintext"></textarea><br /><input type="checkbox"
+      id="always_trust">Always Trust?</td>
+  </tr>
+  <tr>
+    <td>Ciphertext</td>
+    <td><textarea rows="10" cols="80" name="ciphertext" id="ciphertext"></textarea></td>
+  </tr>
+  <tr>
+    <td>Raw text (verification/signing)</td>
+    <td><textarea rows="10" cols="80" name="rawtext" id="rawtext"></textarea></td>
+  </tr>
+  <tr>
+    <td>Signed text</td>
+    <td><textarea rows="10" cols="80" name="vsignedtext" id="vsignedtext"></textarea></td>
+  </tr>
+  <tr>
+    <td>Misc text output area</td>
+    <td><div id="misc"></div></td>
+  </tr>
+  <tr>
+    <td>Keyserver (for 'get key')</td>
+    <td><input type="text" name="keyserver" id="keyserver" /></td>
+  </tr>
+  <tr>
+    <td>UID (for 'sign uid')</td>
+    <td><input type="text" name="uid" id="uid" /></td>
+  </tr>
+  <tr>
+    <td>Trust Level (for 'sign uid')</td>
+    <td><input type="text" name="level" id="level" /></td>
+  </tr>
+
+
+</table>
+
+<input type="submit" onclick="encryptText();" value="Encrypt" />
+<input type="submit" onclick="decryptText();" value="Decrypt" />
+<input type="submit" onclick="signText();" value="Sign" />
+<input type="submit" onclick="clearSignText();" value="Clearsign" />
+<input type="submit" onclick="verifyText();" value="Verify" />
+<input type="submit" onclick="clearVerifyText();" value="Clearverify" />
+<input type="submit" onclick="getKey();" value="Get Key" />
+<input type="submit" onclick="getUids();" value="Get UID" />
+<input type="submit" onclick="getVersion();" value="Get Version" />
+<input type="submit" onclick="getTrust();" value="Get Trust" />
+<input type="submit" onclick="getFingerprint();" value="Get Fingerprint" />
+<input type="submit" onclick="signUid();" value="Sign UID" />
+
+<div id="gpg" />
+
+</body>
+</html>
