@@ -315,4 +315,10 @@ class Gnupg : public BaseGnupg {
 };
 
 
+namespace glue {
+namespace class_Gnupg {
+bool IsTrustedOrigin(void *pdata);
+}
+}
+
 #endif  // _GPGPLUGIN_GNUPG_H_

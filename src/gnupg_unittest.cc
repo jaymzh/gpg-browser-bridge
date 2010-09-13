@@ -36,6 +36,8 @@
 #include <npapi.h>
 #include <npruntime.h>
 
+#include "static_object.h"
+
 using ::testing::_;
 using ::testing::Return;
 using ::testing::SetArgumentPointee;
@@ -47,6 +49,22 @@ namespace {
 
 static const std::string kTEST_STRING = "this is test stuff\n";
 static PRProcess *const kFAKE_PROCESS = reinterpret_cast<PRProcess *>(0xdead);
+
+static const std::string kFIREFOX_ORIGIN =
+    "chrome://browser/content/browser.xul";
+static const std::string kCHROME_ORIGIN =
+    "chrome-extension://abcdefghijklmnopqrstuvwxyz";
+static const std::string kSAFARI_ORIGIN =
+    "safari-extension://com.google.gpg-0123456789ABC";
+static const std::string kINVALID_ORIGIN = "http://www.example.com";
+static void *kFIREFOX_TEST = reinterpret_cast<void *>(0x1);
+static void *kCHROME_TEST = reinterpret_cast<void *>(0x2);
+static void *kSAFARI_TEST = reinterpret_cast<void *>(0x3);
+static void *kINVALID_TEST = reinterpret_cast<void *>(0x4);
+static const NPIdentifier kLOCATION = reinterpret_cast<NPIdentifier>(0x1);
+static const NPIdentifier kHREF = reinterpret_cast<NPIdentifier>(0x2);
+static const NPIdentifier kUNKNOWN_IDENTIFIER =
+    reinterpret_cast<NPIdentifier>(0x3);
 
 class MockGnupg : public BaseGnupg {
  public:
@@ -445,36 +463,117 @@ TEST(GnupgDecryptText, FailsToDecrypt) {
   EXPECT_TRUE(rd.is_error());
 }
 
+TEST(GnupgOriginDetection, TrustsSafeOrigins) {
+  NPP npp = new NPP_t;
+  glue::globals::NPAPIObject *object;
 
+  /* Test Firefox */
+  npp->pdata = kFIREFOX_TEST;
+  object = new glue::globals::NPAPIObject(npp);
+  EXPECT_TRUE(glue::class_Gnupg::IsTrustedOrigin(
+      reinterpret_cast<void *>(object)));
+  delete object;
+
+  /* Test Chrome */
+  npp->pdata = kCHROME_TEST;
+  object = new glue::globals::NPAPIObject(npp);
+  EXPECT_TRUE(glue::class_Gnupg::IsTrustedOrigin(
+      reinterpret_cast<void *>(object)));
+  delete object;
+
+  /* Test Safari */
+  npp->pdata = kSAFARI_TEST;
+  object = new glue::globals::NPAPIObject(npp);
+  EXPECT_TRUE(glue::class_Gnupg::IsTrustedOrigin(
+      reinterpret_cast<void *>(object)));
+  delete object;
+
+  /* Test Invalid */
+  npp->pdata = kINVALID_TEST;
+  object = new glue::globals::NPAPIObject(npp);
+  EXPECT_FALSE(glue::class_Gnupg::IsTrustedOrigin(
+      reinterpret_cast<void *>(object)));
+  delete object;
+
+  delete npp;
+}
 } /* namespace */
+
 
 /*
  * NPN_xxx helper functions which are ordinarily provided by the browser.
- * These are all stubs that do nothing, but are necessary for linking.
- * The reason these do nothing is because the test code above can directly
- * call gpg.SetConfigValue("foo", "bar") which does not pass through the
- * user glue code that nixysa proxies calls to.
+ * These lightweight implementations are needed to test the glue code that
+ * nixysa generates to proxy calls to SetConfigValue().
  */
 
-NPIdentifier NPN_GetStringIdentifier(const NPUTF8* /*name*/) {
-  return NULL;
+NPIdentifier NPN_GetStringIdentifier(const NPUTF8 *name) {
+  std::string location = "location";
+  std::string href = "href";
+
+  if (location.compare(name) == 0)
+    return kLOCATION;
+  else if (href.compare(name) == 0)
+    return kHREF;
+  else  // This case should never happen.
+    return kUNKNOWN_IDENTIFIER;
 }
 
-NPError NPN_GetValue(NPP /*instance*/, NPNVariable /*variable*/,
-                     void* /*value*/) {
-  return NPERR_GENERIC_ERROR;
+NPError NPN_GetValue(NPP /*instance*/, NPNVariable variable, void *value) {
+  if (variable == NPNVWindowNPObject) {
+    value = reinterpret_cast<void *>(0xdead);
+    return NPERR_NO_ERROR;
+  } else {
+    value = NULL;
+    return NPERR_GENERIC_ERROR;
+  }
 }
 
-bool NPN_GetProperty(NPP /*npp*/, NPObject* /*npobj*/,
-                     NPIdentifier /*propertyname*/, NPVariant* /*result*/) {
-  return false;
+bool NPN_GetProperty(NPP npp, NPObject* /*npobj*/, NPIdentifier propertyname,
+                NPVariant *result) {
+  // The fixed NPIdentifier values are 0x1 for location and 0x2 for href.
+  if (propertyname == kLOCATION) {
+    return true;
+  } else if (propertyname == kHREF) {
+    // Return a safe origin, e.g. chrome-extension://..."
+    const char *origin;
+    if (npp->pdata == kFIREFOX_TEST)
+      origin = kFIREFOX_ORIGIN.c_str();
+    else if (npp->pdata == kCHROME_TEST)
+      origin = kCHROME_ORIGIN.c_str();
+    else if (npp->pdata == kSAFARI_TEST)
+      origin = kSAFARI_ORIGIN.c_str();
+    else
+      origin = kINVALID_ORIGIN.c_str();
+
+    result->type = NPVariantType_String;
+    result->value.stringValue.UTF8Characters = strdup(origin);
+    result->value.stringValue.UTF8Length = strlen(origin);
+    return true;
+  }
 }
 
-void NPN_ReleaseVariantValue(NPVariant* /*variant*/) { }
+void NPN_ReleaseVariantValue(NPVariant *variant) {
+  if (variant && variant->type == NPVariantType_String)
+    free(reinterpret_cast<void *>(
+        const_cast<char *>(variant->value.stringValue.UTF8Characters)));
+  return;
+}
 
-void NPN_ReleaseObject(NPObject* /*npobj*/) { }
+void NPN_ReleaseObject(NPObject* /*npobj*/) {
+  return;
+}
 
-/* End NPN_xxx stubs. */
+
+NPObject *NPN_RetainObject(NPObject *npobj) {
+  return npobj;
+}
+
+void *NPN_MemAlloc(uint32_t size) {
+  return malloc(size);
+}
+
+/* End NPN_xxx helper functions. */
+
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);

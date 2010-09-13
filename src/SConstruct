@@ -34,7 +34,11 @@ import sys
 
 IDL_SOURCES=['types.idl', 'gnupg.idl']
 SOURCES=['gnupg.cc', 'logging.cc', 'plugin.cc', 'prefs.cc', 'tmpwrapper.cc']
-STATIC_GLUE_SOURCES=['common.cc', 'npn_api.cc', 'static_object.cc', 'main.cc']
+GLUE_SOURCES=['common.cc', 'npn_api.cc', 'main.cc']
+# static_object.cc is a special case since it is required for gnupg_unittest,
+# but including the other NPAPI sources above results in redefinition of
+# methods that are stubbed out in gnupg_unittest.cc (e.g. the NPN_xxx methods).
+STATIC_OBJ_GLUE_SOURCES=['static_object.cc']
 
 if sys.platform == 'win32':
     NSPR_DIR = '/xulrunner-sdk/include'
@@ -107,10 +111,13 @@ prstreams = [env.SharedObject('$PRSTREAMS_DIR/prstrms.cpp',
 #
 objs = [env.SharedObject(s, CCFLAGS=env['CCFLAGS'] + WARNFLAGS)
         for s in SOURCES]
+static_obj_glue_objs = [env.SharedObject(s) for s in ['$STATIC_GLUE_DIR/' + f
+                        for f in STATIC_OBJ_GLUE_SOURCES]]
+glue_objs = [env.SharedObject(s) for s in ['$STATIC_GLUE_DIR/' + f for f in
+               GLUE_SOURCES]]
+nixysa_objs = [static_obj_glue_objs + glue_objs]
 plugin = env.SharedLibrary('npgnupg', AUTOGEN_CC_FILES + objs + prstreams +
-                           [env.RES(f) for f in RESOURCES] +
-                           ['$STATIC_GLUE_DIR/' + f
-                            for f in STATIC_GLUE_SOURCES])
+                           nixysa_objs + [env.RES(f) for f in RESOURCES])
 
 # TODO(philames): Create a build rule that will copy
 # src/extensions/common/gpg_common.js to the  appropriate directory for each
@@ -138,7 +145,7 @@ if 'gnupg_unittest' in COMMAND_LINE_TARGETS:
   #
   env.Append(CPPPATH=[GTEST_DIR + '/include', GMOCK_DIR + '/include'])
   env.Program(target='gnupg_unittest',
-              source = [objs + prstreams,
+              source = [objs + prstreams + static_obj_glue_objs,
                         'gnupg_unittest.cc', 'tmpwrapper_unittest.cc',
                         GMOCK_DIR + '/lib/.libs/libgmock.a',
                         GTEST_DIR + '/lib/.libs/libgtest.a'],

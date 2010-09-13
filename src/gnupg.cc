@@ -1438,6 +1438,15 @@ bool IsTrustedOrigin(void *pdata) {
    */
   trusted_origins.push_back("chrome-extension://");
 
+  /*
+   * This origin is for Safari.  It can be more specific if we know the
+   * identifier assigned to the certificate used to sign the extension
+   * as well as the value of CFBundleIdentifier the extension is shipped
+   * with.  Example:
+   * safari-extension://com.google.gpg-3D9JVBY7TP/global.html
+   */
+  trusted_origins.push_back("safari-extension://");
+
   static_object = static_cast<globals::NPAPIObject*>(pdata);
   if(!static_object || !(npp = static_object->npp()))
     return rv;
