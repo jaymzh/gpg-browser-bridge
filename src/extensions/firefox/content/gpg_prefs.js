@@ -102,6 +102,7 @@ var preferenceObserver = {
                            gpgPrefs.getPreference('gpg_binary_path'));
         break;
       case 'gpg_key_id':
+      case 'gpg_allowed_sites':
         break;
       default:
         alert('unknown preference \'' + data + '\' updated');

@@ -100,12 +100,37 @@ function checkProvidedKey(key, preferredKeys) {
  */
 function argumentsOk(response, error) {
   for (var i = 2; i < arguments.length; i++) {
-    if(arguments[i] == null) {
+    if (arguments[i] == null) {
       response.errorStr = error;
       return false;
     }
   }
   return true;
+}
+
+/*
+ * TODO(philames/pdibowitz): Implement checking on actual methods.
+ */
+function checkPermission(preferences, origin, method) {
+  var as_string = preferences.getPreference('gpg_allowed_sites');
+  var allowed_sites = []
+  if (as_string != null) {
+    allowed_sites = as_string.split(',');
+  }
+  var is_allowed_site = false;
+  for (var site in allowed_sites) {
+    var re;
+    if (allowed_sites[site].match('^https://')) {
+      re = new RegExp(allowed_sites[site] + '(:\d+)?$');
+    } else {
+      re = new RegExp('^https?://' + allowed_sites[site] + '(:\d+)?$');
+    }
+    if (origin.match(re)) {
+      is_allowed_site = true;
+      break;
+    }
+  }
+  return is_allowed_site;
 }
 
 /*
@@ -122,12 +147,16 @@ function processGpgEvent(request, preferences) {
   response.targetOrigin = request.targetOrigin;
   response.txid = request.txid;
 
-  /*
-   * TODO(philames): insert a check to validate that this origin is authorized
-   * to invoke the method (to prevent evil.com from arbitrarily signing text as
-   * me if my passphrase is cached).
-   */
+  /* First check the site is allowed to use us... */
+  var allowed = checkPermission(preferences, request.targetOrigin,
+                                request.method);
+  if (!allowed) {
+    response.errorStr = 'Site (' + request.targetOrigin + ') not permitted'
+        + ' to use plugin';
+    return response;
+  }
 
+  /* ... and if we're configured. */
   if (preferences.getPreference('gpg_last_configured') <
       preferences.getPreference('gpg_last_updated')) {
     /*

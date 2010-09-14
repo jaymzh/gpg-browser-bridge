@@ -1275,7 +1275,7 @@ GpgRetString BaseGnupg::GetTrust(const std::string &keyid) {
  * with gpg.
  */
 GpgRetBool BaseGnupg::SignUid(const std::string &keyid, const std::string &uid,
-                           const std::string &level) {
+                              const std::string &level) {
   GpgRetBool retobj;
   /*
    * We use a goto below, which means all initialization has to be up-top.

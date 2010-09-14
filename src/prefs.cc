@@ -140,10 +140,10 @@ GpgPreferences::GpgPreferences() {
   // Step 3
   Preferences[GpgPluginInitialized] = "false";
 #if defined(OS_WINDOWS)
-  Preferences[GpgBinaryPath].append("C:\\Program Files\\GNU\\GnuPG\\gpg.exe");
+  Preferences[GpgBinaryPath] = "C:\\Program Files\\GNU\\GnuPG\\gpg.exe";
 #elif defined(OS_MACOSX)
-  Preferences[GpgBinaryPath].append("/opt/local/bin/gpg");
+  Preferences[GpgBinaryPath] = "/opt/local/bin/gpg";
 #else
-  Preferences[GpgBinaryPath].append("/usr/bin/gpg");
+  Preferences[GpgBinaryPath] = "/usr/bin/gpg";
 #endif
 }

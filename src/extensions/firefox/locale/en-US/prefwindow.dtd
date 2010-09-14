@@ -5,3 +5,5 @@
 <!ENTITY gpg_binary_path.accesskey 'P'>
 <!ENTITY gpg_key_id.label 'Preferred GPG Key ID'>
 <!ENTITY gpg_key_id.accesskey 'K'>
+<!ENTITY gpg_allowed_sites.label 'Sites allowed to use plugin.'>
+<!ENTITY gpg_allowed_sites.accesskey 'S'>
