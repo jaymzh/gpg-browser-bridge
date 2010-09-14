@@ -36,9 +36,11 @@
     function saveOptions() {
       var gpgBinaryPath = document.getElementById('gpg_binary_path').value;
       var gpgKeyId = document.getElementById('gpg_key_id').value;
+      var gpgAllowedSites = document.getElementById('gpg_allowed_sites').value;
 
       localStorage['gpg_binary_path'] = gpgBinaryPath;
       localStorage['gpg_key_id'] = gpgKeyId;
+      localStorage['gpg_allowed_sites'] = gpgAllowedSites;
       localStorage['gpg_last_updated'] = new Date();
     }
 
@@ -48,6 +50,9 @@
 
       var gpgKeyId = localStorage['gpg_key_id'];
       document.getElementById('gpg_key_id').value = gpgKeyId || '';
+
+      var gpgAllowedSites = localStorage['gpg_allowed_sites'];
+      document.getElementById('gpg_allowed_sites').value = gpgAllowedSites || '';
     }
   </script>
   <body onLoad='restoreOptions()'>
@@ -55,6 +60,8 @@
       id='gpg_binary_path' /></p>
     <p>Preferred Key ID: <input type='text' name='gpg_key_id' id='gpg_key_id'
       placeholder='00000000' /></p>
-      <p><button onclick='saveOptions()'>Save</button></p>
+    <p>Sites allowed to use this plugin: <input type='text'
+      name='gpg_allowed_sites' id='gpg_allowed_sites' />
+    <p><button onclick='saveOptions()'>Save</button></p>
   </body>
 </html>
