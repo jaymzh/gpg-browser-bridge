@@ -103,20 +103,18 @@ as the 'common/gpg_common.js' script.  To create a crx file, once you have
 loaded the unpacked extension, you can click 'pack extension' from the
 chrome://extensions/ page.
 
-There are some known limitations between Chrome/Firefox.  Neither browser
-seems to support dispatching events/passing messages between pages loaded
+The Safari extension should function properly once the following bug is
+resolved:
+https://bugs.webkit.org/show_bug.cgi?id=44351
+
+There are some known limitations between browsers.  None of the browsers
+seem to support dispatching events/passing messages between pages loaded
 from a file:// origin.  On Firefox, the event is properly dispatched and
 the extension code can see that it would have to post a message back to
 a file:// page and create an alert() box telling the user that their operation
 has failed, but on Chrome, the message does not appear to be dispatched to
 the extension.
 
-Additionally, on Chrome, the path to the GPG binary must be typed in manually
-in the options page.  In Firefox, an (undocumented) input control is used to
-allow the user to have a "File Chooser" dialog (which allows retrieval of the
-full filesystem path), but on Chrome, use of an <input type="file"> tag will
-only result in the filename ("gpg") being accessible and not its full
-filesystem path ("/usr/bin/gpg").
 
 ======== FURTHER DOCUMENTATION ========
 
