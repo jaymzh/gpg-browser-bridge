@@ -1,0 +1,66 @@
+/*
+ * Copyright 2010, Google Inc.
+ *
+ * ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS"  basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is the GPG Browser Bridge.
+ *
+ * The Initial Developer of the Original Code is Google Inc.
+ *
+ * Portions created by the Initial Developer are Copyright (C) 2010
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Phil Ames <philames@google.com>
+ *
+ * ***** END LICENSE BLOCK *****
+ */
+
+/*
+ * This function sets all configuration values from the locally
+ * stored preferences.
+ */
+function configurePlugin() {
+  if (gpg == null) {
+    return false;
+  }
+  if (safari.extension.settings.gpg_binary_path == null ||
+      (safari.extension.settings.gpg_binary_path != null &&
+       safari.extension.settings.gpg_binary_path.length == 0)) {
+        alert('GPG binary path not specified, functionality will be disabled.');
+        gpg.setConfigValue('gpg_plugin_initialized', 'false');
+        return false;
+      }
+
+  gpg.setConfigValue('gpg_binary_path',
+                     safari.extension.settings.gpg_binary_path);
+  gpg.setConfigValue('gpg_plugin_initialized', 'true');
+
+  safari.extension.settings.gpg_last_configured = new Date();
+  return true;
+}
+
+function getPreferenceService() {
+  var rv = {
+    getPreference:
+      function(pref) {
+        return safari.extension.settings[pref];
+      }
+  };
+  return rv;
+}
+
+function prefChange(e) {
+  safari.extension.settings.gpg_last_updated = new Date();
+}

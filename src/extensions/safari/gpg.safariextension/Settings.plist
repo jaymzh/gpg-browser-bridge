@@ -1,0 +1,40 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE plist PUBLIC '-//Apple//DTD PLIST 1.0//EN' 'http://www.apple.com/DTDs/PropertyList-1.0.dtd'>
+<plist version='1.0'>
+<array>
+  <dict>
+    <key>Key</key>
+    <string>gpg_allowed_sites</string>
+    <key>Title</key>
+    <string>Sites allowed to use plugin</string>
+    <key>Type</key>
+    <string>TextField</string>
+  </dict>
+  <dict>
+    <key>DefaultValue</key>
+    <string>/usr/local/bin/gpg</string>
+    <key>Key</key>
+    <string>gpg_binary_path</string>
+    <key>Title</key>
+    <string>Path to GPG Binary</string>
+    <key>Type</key>
+    <string>TextField</string>
+  </dict>
+  <dict>
+    <key>Key</key>
+    <string>gpg_key_id</string>
+    <key>Title</key>
+    <string>Preferred GPG Key ID</string>
+    <key>Type</key>
+    <string>TextField</string>
+  </dict>
+  <dict>
+    <key>Key</key>
+    <string>gpg_last_configured</string>
+  </dict>
+  <dict>
+    <key>Key</key>
+    <string>gpg_last_updated</string>
+  </dict>
+</array>
+</plist>
