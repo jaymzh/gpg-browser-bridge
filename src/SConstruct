@@ -49,6 +49,7 @@ else:
     RESOURCES = []
 
 env = Environment(
+    TARGET_ARCH = 'x86', # Used when building using 64-bit Windows.
     THIRD_PARTY = '../third_party',
     NIXYSA_DIR = '$THIRD_PARTY/nixysa/nixysa',
     PRSTREAMS_DIR = '$THIRD_PARTY/prstreams',
