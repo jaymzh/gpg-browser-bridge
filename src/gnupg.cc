@@ -111,7 +111,6 @@ static const char *kGPG_ENC_TO = "ENC_TO";
 static const char *kGPG_PLAINTEXT = "PLAINTEXT";
 static const char *kGPG_PLAINTEXT_LENGTH = "PLAINTEXT_LENGTH";
 static const char *kGPG_DECRYPTION_OKAY = "DECRYPTION_OKAY";
-static const char *kGPG_GOODMDC = "GOODMDC";
 static const char *kGPG_END_DECRYPTION = "END_DECRYPTION";
 static const char *kGPG_DECRYPTION_FAILED = "DECRYPTION_FAILED";
 static const char *kGPG_IMPORT_OK = "IMPORT_OK";
@@ -1023,11 +1022,10 @@ GpgRetDecryptInfo BaseGnupg::DecryptText(const std::string &cipher_text) {
   expected.push_back(kGPG_PLAINTEXT);
   expected.push_back(kGPG_PLAINTEXT_LENGTH);
   expected.push_back(kGPG_DECRYPTION_OKAY);
-  expected.push_back(kGPG_GOODMDC);
   expected.push_back(kGPG_END_DECRYPTION);
 
   if (!CheckForUnorderedOutput(expected, parsed_output)) {
-    LOG(("GPG: CheckRequiredOutput failed for decyrption check"));
+    LOG(("GPG: CheckRequiredOutput failed for decryption check"));
     retobj.set_error_str(kERR_UNEXPECTED_GPG_OUTPUT);
     return retobj;
   }
