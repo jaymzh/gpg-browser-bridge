@@ -125,34 +125,18 @@ plugin = env.SharedLibrary('npgnupg', AUTOGEN_CC_FILES + objs + prstreams +
 # extension.
 
 # TESTS
-# #
-# Note that while many distributions have a gtest, you really need to use the
-# gtest that comes with gmock, if you want to use gmock. So that's what we do
-# here.
-if 'gnupg_unittest' in COMMAND_LINE_TARGETS:
-  TP_DIR = '../third_party'
-  GMOCK_DIR = TP_DIR + '/gmock'
-  GTEST_DIR = GMOCK_DIR + '/gtest'
-  Export('env')
-  gtest_dir = env.Dir('.')
-  gtest_dir.addRepository(env.Dir(GTEST_DIR))
-
-  env.Append(CPPPATH=['../' + GTEST_DIR + '/include',
-                      '../' + GMOCK_DIR + '/include'])
-  env.SConscript(env.File('scons/SConscript', gtest_dir))
-  #
-  # The nixysa framework makes .o files called .os files... they're *identical*
-  # so we compile that into the test instead of *also* building static libraries.
-  #
-  env.Append(CPPPATH=[GTEST_DIR + '/include', GMOCK_DIR + '/include'])
-  env.Program(target='gnupg_unittest',
-              source = [objs + prstreams + static_obj_glue_objs,
-                        'gnupg_unittest.cc', 'tmpwrapper_unittest.cc',
-                        GMOCK_DIR + '/lib/.libs/libgmock.a',
-                        GTEST_DIR + '/lib/.libs/libgtest.a'],
-              LIBS=['nspr4', 'pthread'],
-              LIBPATH=['scons',
-                       GMOCK_DIR + '/lib/.libs',
-                       GTEST_DIR + '/lib/.libs'])
+#
+# Note that it's necessary to use the gtest that comes with gmock (ie. the
+# gtest used to build gmock), and not any random gtest. This should be taken
+# care of for you if you installed the libraries using any decent package
+# system.
+#
+# The nixysa framework makes .o files called .os files... they're *identical*
+# so we compile that into the test instead of *also* building static libraries.
+#
+unittest = env.Program(target='gnupg_unittest',
+                       source = [objs + prstreams + static_obj_glue_objs,
+		       'gnupg_unittest.cc', 'tmpwrapper_unittest.cc'],
+		       LIBS=['nspr4', 'pthread', 'gtest', 'gmock'])
 
 Default(plugin)
