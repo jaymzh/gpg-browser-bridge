@@ -63,8 +63,7 @@ env = Environment(
 )
 env.Append(ENV={'PYTHON': sys.executable})
 if env['CC'] == 'cl':
-    env.Append(CCFLAGS = ['/MT', '/EHsc'],
-               LINKFLAGS = '/def:npgnupg.def')
+    env.Append(CCFLAGS = ['/MT', '/EHsc'])
     WARNFLAGS = ['/W3']
 else:
     WARNFLAGS = ['-Wall', '-Werror']
@@ -84,6 +83,12 @@ elif sys.platform == 'darwin':
 else:
   env.Append(CODEGEN = 'codegen.sh',
              CPPDEFINES = ['OS_LINUX'])
+
+# Up to this point, the same Environment is shared between plugin and unittest.
+test_env = env.Clone()
+
+if env['CC'] == 'cl':
+  env.Append(LINKFLAGS = '/def:npgnupg.def')
 
 def NixysaEmitter(target, source, env):
   bases = [os.path.splitext(s.name)[0] for s in source] + ['globals']
@@ -134,9 +139,18 @@ plugin = env.SharedLibrary('npgnupg', AUTOGEN_CC_FILES + objs + prstreams +
 # The nixysa framework makes .o files called .os files... they're *identical*
 # so we compile that into the test instead of *also* building static libraries.
 #
-unittest = env.Program(target='gnupg_unittest',
-                       source = [objs + prstreams + static_obj_glue_objs,
-		       'gnupg_unittest.cc', 'tmpwrapper_unittest.cc'],
-		       LIBS=['nspr4', 'pthread', 'gtest', 'gmock'])
+test_env.Append(LIBS=['gmock'])
+
+if sys.platform == 'win32':
+  test_env.Append(CPPPATH=['../../gmock-1.5.0/gtest/include',
+                           '../../gmock-1.5.0/include'],
+                  LIBPATH=['../../gmock-1.5.0/msvc/Release'],
+                  LINKFLAGS = ['/LTCG'])
+else:
+  test_env.Append(LIBS=['gtest'])
+
+unittest = test_env.Program(target='gnupg_unittest',
+                            source = [objs + prstreams + static_obj_glue_objs,
+                            'gnupg_unittest.cc', 'tmpwrapper_unittest.cc'])
 
 Default(plugin)
