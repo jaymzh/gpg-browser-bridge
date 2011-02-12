@@ -554,6 +554,8 @@ bool NPN_GetProperty(NPP npp, NPObject* /*npobj*/, NPIdentifier propertyname,
     result->value.stringValue.UTF8Length = strlen(origin);
     return true;
   }
+  ADD_FAILURE();
+  return false;
 }
 
 void NPN_ReleaseVariantValue(NPVariant *variant) {
