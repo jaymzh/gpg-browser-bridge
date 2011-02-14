@@ -34,18 +34,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifdef OS_WINDOWS
-#include <io.h>
-#else
-#include <unistd.h>
-#endif
-
 #include <cerrno>
-
-#if !defined(S_IRUSR) && !defined(S_IWUSR)
-#define S_IRUSR S_IREAD
-#define S_IWUSR S_IWRITE
-#endif
 
 namespace {
 
@@ -54,9 +43,8 @@ namespace {
  * the wrapper class.
  */
 
-/* This fails on Windows. TODO(roubert): Fix. */
 TEST(TmpWrapperTestCreateAndWriteTmpFile, DoesRemove) {
-  std::string pattern = "/tmp/test_XXXXXX";
+  std::string pattern = "gpgut";
   TmpWrapper *tmp = new TmpWrapper;
   tmp->CreateAndWriteTmpFile("Bla", &pattern);
   struct stat statbuf;
@@ -67,40 +55,37 @@ TEST(TmpWrapperTestCreateAndWriteTmpFile, DoesRemove) {
   EXPECT_EQ(ENOENT, errno);
 }
 
-#ifndef OS_WINDOWS /* These crash on Windows. TODO(roubert): Fix. */
 /*
  * Make sure the temp files go away when created outside
  * the wrapper class.
  */
 TEST(TmpWrapperTestUnlinkAndTrackFile, DoesRemoveWithNonexistingFile) {
   /* Get filename */
-  std::string pattern = "/tmp/test_XXXXXX";
-  char *filename = strdup(pattern.c_str());
-  mktemp(filename);
+  std::string filename = TmpWrapper::MkTmpFileName("gpgut");
+  ASSERT_FALSE(filename.empty());
 
   /* track file */
   TmpWrapper *tmp = new TmpWrapper;
-  tmp->UnlinkAndTrackFile(filename);
+  tmp->UnlinkAndTrackFile(filename.c_str());
 
   /* create file */
-  int fd = open(filename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
+  int fd = open(filename.c_str(), TmpWrapper::kFLAGS, TmpWrapper::kMODE);
   EXPECT_NE(0, fd);
   FILE *fs = fdopen(fd, "w");
   EXPECT_TRUE(fs);
   int ret = fputs("Bla", fs);
-  EXPECT_EQ(1, ret);
+  EXPECT_NE(EOF, ret);
   fclose(fs);
 
   /* test it exists */
   struct stat statbuf;
-  EXPECT_EQ(0, stat(filename, &statbuf));
+  EXPECT_EQ(0, stat(filename.c_str(), &statbuf));
 
   /* and test it goes away */
   delete tmp;
-  ret = stat(filename, &statbuf);
+  ret = stat(filename.c_str(), &statbuf);
   EXPECT_EQ(-1, ret);
   EXPECT_EQ(ENOENT, errno);
-  free(filename);
 }
 
 /*
@@ -109,46 +94,43 @@ TEST(TmpWrapperTestUnlinkAndTrackFile, DoesRemoveWithNonexistingFile) {
  */
 TEST(TmpWrapperTestUnlinkAndTrackFile, DoesRemoveWithExistingFile) {
   /* Get filename */
-  std::string pattern = "/tmp/test_XXXXXX";
-  char *filename = strdup(pattern.c_str());
-  mktemp(filename);
+  std::string filename = TmpWrapper::MkTmpFileName("gpgut");
+  ASSERT_FALSE(filename.empty());
 
   /* create file */
-  int fd = open(filename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
+  int fd = open(filename.c_str(), TmpWrapper::kFLAGS, TmpWrapper::kMODE);
   EXPECT_NE(0, fd);
   FILE *fs = fdopen(fd, "w");
   EXPECT_TRUE(fs);
   int ret = fputs("Bla", fs);
-  EXPECT_EQ(1, ret);
+  EXPECT_NE(EOF, ret);
   fclose(fs);
 
   /* track file - it should get removed */
   TmpWrapper *tmp = new TmpWrapper;
-  tmp->UnlinkAndTrackFile(filename);
+  tmp->UnlinkAndTrackFile(filename.c_str());
 
   /* Make sure the call removed it. */
   struct stat statbuf;
-  EXPECT_EQ(-1, stat(filename, &statbuf));
+  EXPECT_EQ(-1, stat(filename.c_str(), &statbuf));
 
   /* create file */
-  fd = open(filename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
+  fd = open(filename.c_str(), TmpWrapper::kFLAGS, TmpWrapper::kMODE);
   EXPECT_NE(0, fd);
   fs = fdopen(fd, "w");
   EXPECT_TRUE(fs);
   ret = fputs("Bla", fs);
-  EXPECT_EQ(1, ret);
+  EXPECT_NE(EOF, ret);
   fclose(fs);
 
   /* test it exists */
-  EXPECT_EQ(0, stat(filename, &statbuf));
+  EXPECT_EQ(0, stat(filename.c_str(), &statbuf));
 
   /* and test it goes away */
   delete tmp;
-  ret = stat(filename, &statbuf);
+  ret = stat(filename.c_str(), &statbuf);
   EXPECT_EQ(-1, ret);
   EXPECT_EQ(ENOENT, errno);
-  free(filename);
 }
-#endif
 
 } /* namespace */

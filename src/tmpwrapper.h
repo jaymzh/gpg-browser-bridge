@@ -41,6 +41,19 @@
  */
 class TmpWrapper {
  public:
+  /*
+   * These constants should be used as parameters to open() for tmp files.
+   */
+  static const int kFLAGS;
+  static const int kMODE;
+
+  /*
+   * Format a fully qualified file name suitable for a new temporary file, whose
+   * name starts with pattern. On Windows, the first three characters of pattern
+   * are used, on other systems the first five characters are used.
+   */
+  static std::string MkTmpFileName(const std::string &pattern);
+
   ~TmpWrapper() {if (!filename_.empty()) {unlink(filename_.c_str());}}
   /*
    * The primary caller, we'll figure out a useful temp file

@@ -70,16 +70,16 @@
 #include "tmpwrapper.h"
 #include "types.h"
 
-#if defined(OS_WINDOWS)
+#ifdef OS_WINDOWS
 #include "createprocess.h"
 #endif
 
-static const char *kTMP_SIGNED_TEXT = "/tmp/plugin_gnupg_signed_txt_XXXXXX";
+static const char *kTMP_SIGNED_TEXT = "gpgst";
 /* CIPHER_TEXT should be whatever this comes out to, plus ".asc" */
-static const char *kTMP_RAW_TEXT = "/tmp/plugin_gnupg_raw_txt_XXXXXX";
-static const char *kTMP_SIGNATURE = "/tmp/plugin_gnupg_signature_XXXXXX";
+static const char *kTMP_RAW_TEXT = "gpgrt";
+static const char *kTMP_SIGNATURE = "gpgsg";
 
-#if defined(OS_WINDOWS)
+#ifdef OS_WINDOWS
 #define DEV_NULL "NUL:"
 #else
 #define DEV_NULL "/dev/null"
@@ -233,7 +233,7 @@ PRProcess *Gnupg::CallGpg(const std::vector<const char*> &args) {
   argv = const_cast<char *const *>(&(command[0]));
 
   LOG("GPG: PR_CreateProcess pgp\n");
-#if defined(OS_WINDOWS)
+#ifdef OS_WINDOWS
   /*
    * Use a workaround until NSPR has been updated to allow execution of Windows
    * Console Applications without opening an empty window.

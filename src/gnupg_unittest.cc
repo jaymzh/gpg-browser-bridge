@@ -251,7 +251,6 @@ TEST(GnupgGetGnupgVersion, CheckCallsVersion) {
  * our code behaves as expected.
  */
 
-/* This fails on Windows. TODO(roubert): Fix. */
 TEST(GnupgVerifySignedText, VerifiesValidSig) {
   MockGnupg gpg;
   gpg.SetConfigValue("gpg_plugin_initialized", "true");
@@ -275,7 +274,6 @@ TEST(GnupgVerifySignedText, VerifiesValidSig) {
   EXPECT_EQ("TRUST_ULTIMATE", si.trust_level());
 }
 
-/* This fails on Windows. TODO(roubert): Fix. */
 TEST(GnupgVerifySignedText, DoesNotVerifyInvalidSig) {
   MockGnupg gpg;
   gpg.SetConfigValue("gpg_plugin_initialized", "true");
@@ -339,7 +337,6 @@ TEST(GnupgEncryptText, ErrorsOnBadKey) {
  * signing is the same, the test cases are identical - there's no need for both.
  */
 
-/* This fails on Windows. TODO(roubert): Fix. */
 TEST(GnupgSignText, DetachSigns) {
   MockGnupg gpg;
   gpg.SetConfigValue("gpg_plugin_initialized", "true");

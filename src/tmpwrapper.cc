@@ -33,6 +33,8 @@
 #ifdef OS_WINDOWS
 #include <io.h>
 #include <sys/stat.h>
+#include <tchar.h>
+#include <windows.h>
 #else
 #include <unistd.h>
 #endif
@@ -46,15 +48,79 @@
 #include "gnupg.h"
 #include "logging.h"
 
-#if !defined(S_IRUSR) && !defined(S_IWUSR)
-#define S_IRUSR S_IREAD
-#define S_IWUSR S_IWRITE
+/*
+ * On Windows, the GetTempFileName() function will create an empty file when
+ * generating a new file name and this file should then be overwritten, but on
+ * other systems it would be an error if a file with the specified name already
+ * existed.
+ */
+const int TmpWrapper::kFLAGS = O_RDWR|O_CREAT
+#ifdef OS_WINDOWS
+                               |O_TRUNC
+#else
+                               |O_EXCL
 #endif
+                                   ;
+
+/*
+ * NOTE WELL: It is VERY important that the MODE in this open is SAFE.
+ * We MUST open files as 600. Otherwise we may let people read sensitive data!
+ */
+const int TmpWrapper::kMODE =
+#ifdef OS_WINDOWS
+                              S_IREAD|S_IWRITE
+#else
+                              S_IRUSR|S_IWUSR
+#endif
+                              ;
+
+std::string TmpWrapper::MkTmpFileName(const std::string &pattern) {
+  static const std::string empty;
+
+#ifdef OS_WINDOWS
+
+  static_assert(sizeof TCHAR == 1, "This code isn't for Unicode builds.");
+
+  DWORD dwRetVal;
+  UINT uRetVal;
+
+  TCHAR szTempPath[MAX_PATH];
+  TCHAR szTempFileName[MAX_PATH];
+
+  dwRetVal = GetTempPath(sizeof szTempPath, szTempPath);
+  if (dwRetVal == 0 || dwRetVal > sizeof szTempPath) {
+    LOG("GetTempPath() failed.");
+    return empty;
+  }
+
+  uRetVal = GetTempFileName(szTempPath, pattern.c_str(), 0, szTempFileName);
+  if (uRetVal == 0) {
+    LOG("GetTempFileName() failed.");
+    return empty;
+  }
+
+  return szTempFileName;
+
+#else
+
+  char *path = tempnam(getenv("TMP"), pattern.c_str());
+  if (path == NULL) {
+    LOG("GPG: tempnam() failed: %s\n", std::strerror(errno));
+    return empty;
+  }
+
+  std::string tmp(path);
+  free(path);
+  return tmp;
+
+#endif
+}
 
 bool TmpWrapper::WriteStringToFile(const std::string &text,
                                    const char *filename) {
   LOG("GPG: Writing tempfile %s\n", filename);
-  int fd = open(filename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
+  int fd = open(filename, kFLAGS, kMODE);
+
   if (fd == -1) {
     LOG("GPG: Failed to open temp file %s: %s", filename, std::strerror(errno));
     return false;
@@ -84,22 +150,14 @@ bool TmpWrapper::WriteStringToFile(const std::string &text,
 
 bool TmpWrapper::CreateAndWriteTmpFile(const std::string &content,
                                        std::string *pattern) {
-  char *filename = strdup(pattern->c_str());
-  /*
-   * In theory mktemp is dangerous, but we emulate mkstemp behavior here.
-   *
-   * NOTE WELL: It is VERY important that the MODE in this open is SAFE.
-   *    We MUST open files as 600. Otherwise we may let people read
-   *    sensitive data!
-   */
-  mktemp(filename);
-  filename_ = filename;
-  if (!WriteStringToFile(content, filename)) {
-    free(filename);
+  filename_ = MkTmpFileName(*pattern);
+  if (filename_.empty()) {
     return false;
   }
-  *pattern = filename;
-  free(filename);
+  if (!WriteStringToFile(content, filename_.c_str())) {
+    return false;
+  }
+  *pattern = filename_;
   return true;
 }
 
