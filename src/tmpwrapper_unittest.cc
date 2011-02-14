@@ -69,7 +69,7 @@ TEST(TmpWrapperTestUnlinkAndTrackFile, DoesRemoveWithNonexistingFile) {
   tmp->UnlinkAndTrackFile(filename.c_str());
 
   /* create file */
-  int fd = open(filename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
+  int fd = open(filename.c_str(), TmpWrapper::kFLAGS, TmpWrapper::kMODE);
   EXPECT_NE(-1, fd);
   FILE *fs = fdopen(fd, "w");
   EXPECT_TRUE(fs);
@@ -98,7 +98,7 @@ TEST(TmpWrapperTestUnlinkAndTrackFile, DoesRemoveWithExistingFile) {
   ASSERT_FALSE(filename.empty());
 
   /* create file */
-  int fd = open(filename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
+  int fd = open(filename.c_str(), TmpWrapper::kFLAGS, TmpWrapper::kMODE);
   EXPECT_NE(-1, fd);
   FILE *fs = fdopen(fd, "w");
   EXPECT_TRUE(fs);
@@ -115,7 +115,7 @@ TEST(TmpWrapperTestUnlinkAndTrackFile, DoesRemoveWithExistingFile) {
   EXPECT_EQ(-1, stat(filename.c_str(), &statbuf));
 
   /* create file */
-  fd = open(filename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
+  fd = open(filename.c_str(), TmpWrapper::kFLAGS, TmpWrapper::kMODE);
   EXPECT_NE(-1, fd);
   fs = fdopen(fd, "w");
   EXPECT_TRUE(fs);
