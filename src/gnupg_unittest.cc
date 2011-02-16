@@ -294,7 +294,6 @@ TEST(GnupgEncryptText, EncryptsToValidKey) {
   MockGnupg gpg;
   gpg.SetConfigValue("gpg_plugin_initialized", "true");
   std::vector<std::string> keyids, hidden_keyids;
-  bool always_trust = false;
 
   std::string ret = "[GNUPG:] BEGIN_ENCRYPTION 2 9\n"
       "[GNUPG:] END_ENCRYPTION\n";
@@ -316,7 +315,6 @@ TEST(GnupgEncryptText, ErrorsOnBadKey) {
   MockGnupg gpg;
   gpg.SetConfigValue("gpg_plugin_initialized", "true");
   std::vector<std::string> keyids, hidden_keyids;
-  bool always_trust = false;
 
   std::string ret = "[GNUPG:] INV_RECP 0 3592D514\n";
 
