@@ -54,7 +54,7 @@ class TmpWrapper {
    */
   static std::string MkTmpFileName(const std::string &pattern);
 
-  ~TmpWrapper() {if (!filename_.empty()) {unlink(filename_.c_str());}}
+  ~TmpWrapper();
   /*
    * The primary caller, we'll figure out a useful temp file
    * based on |pattern|, write the filename back to |pattern|

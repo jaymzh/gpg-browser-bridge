@@ -27,14 +27,13 @@
  * ***** END LICENSE BLOCK *****
  */
 
-#include "tmpwrapper.h"
-
 #include <gtest/gtest.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <prerror.h>
+#include <prio.h>
 
-#include <cerrno>
+#include <string>
+
+#include "tmpwrapper.h"
 
 namespace {
 
@@ -47,12 +46,15 @@ TEST(TmpWrapperTestCreateAndWriteTmpFile, DoesRemove) {
   std::string pattern = "gpgut";
   TmpWrapper *tmp = new TmpWrapper;
   tmp->CreateAndWriteTmpFile("Bla", &pattern);
-  struct stat statbuf;
-  EXPECT_EQ(0, stat(pattern.c_str(), &statbuf));
+
+  /* test it exists */
+  PRFileInfo info;
+  EXPECT_EQ(PR_SUCCESS, PR_GetFileInfo(pattern.c_str(), &info));
+
+  /* and test it goes away */
   delete tmp;
-  int ret = stat(pattern.c_str(), &statbuf);
-  EXPECT_EQ(-1, ret);
-  EXPECT_EQ(ENOENT, errno);
+  EXPECT_EQ(PR_FAILURE, PR_GetFileInfo(pattern.c_str(), &info));
+  EXPECT_EQ(PR_FILE_NOT_FOUND_ERROR, PR_GetError());
 }
 
 /*
@@ -60,6 +62,8 @@ TEST(TmpWrapperTestCreateAndWriteTmpFile, DoesRemove) {
  * the wrapper class.
  */
 TEST(TmpWrapperTestUnlinkAndTrackFile, DoesRemoveWithNonexistingFile) {
+  static const char data[] = "Bla";
+
   /* Get filename */
   std::string filename = TmpWrapper::MkTmpFileName("gpgut");
   ASSERT_FALSE(filename.empty());
@@ -69,23 +73,20 @@ TEST(TmpWrapperTestUnlinkAndTrackFile, DoesRemoveWithNonexistingFile) {
   tmp->UnlinkAndTrackFile(filename.c_str());
 
   /* create file */
-  int fd = open(filename.c_str(), TmpWrapper::kFLAGS, TmpWrapper::kMODE);
-  EXPECT_NE(-1, fd);
-  FILE *fs = fdopen(fd, "w");
-  EXPECT_TRUE(fs);
-  int ret = fputs("Bla", fs);
-  EXPECT_NE(EOF, ret);
-  fclose(fs);
+  PRFileDesc *fd =
+      PR_Open(filename.c_str(), TmpWrapper::kFLAGS, TmpWrapper::kMODE);
+  ASSERT_TRUE(fd != NULL);
+  EXPECT_NE(-1, PR_Write(fd, data, sizeof data - 1));
+  EXPECT_EQ(PR_SUCCESS, PR_Close(fd));
 
   /* test it exists */
-  struct stat statbuf;
-  EXPECT_EQ(0, stat(filename.c_str(), &statbuf));
+  PRFileInfo info;
+  EXPECT_EQ(PR_SUCCESS, PR_GetFileInfo(filename.c_str(), &info));
 
   /* and test it goes away */
   delete tmp;
-  ret = stat(filename.c_str(), &statbuf);
-  EXPECT_EQ(-1, ret);
-  EXPECT_EQ(ENOENT, errno);
+  EXPECT_EQ(PR_FAILURE, PR_GetFileInfo(filename.c_str(), &info));
+  EXPECT_EQ(PR_FILE_NOT_FOUND_ERROR, PR_GetError());
 }
 
 /*
@@ -93,44 +94,41 @@ TEST(TmpWrapperTestUnlinkAndTrackFile, DoesRemoveWithNonexistingFile) {
  * the wrapper class.
  */
 TEST(TmpWrapperTestUnlinkAndTrackFile, DoesRemoveWithExistingFile) {
+  static const char data[] = "Bla";
+
   /* Get filename */
   std::string filename = TmpWrapper::MkTmpFileName("gpgut");
   ASSERT_FALSE(filename.empty());
 
   /* create file */
-  int fd = open(filename.c_str(), TmpWrapper::kFLAGS, TmpWrapper::kMODE);
-  EXPECT_NE(-1, fd);
-  FILE *fs = fdopen(fd, "w");
-  EXPECT_TRUE(fs);
-  int ret = fputs("Bla", fs);
-  EXPECT_NE(EOF, ret);
-  fclose(fs);
+  PRFileDesc *fd =
+      PR_Open(filename.c_str(), TmpWrapper::kFLAGS, TmpWrapper::kMODE);
+  ASSERT_TRUE(fd != NULL);
+  EXPECT_NE(-1, PR_Write(fd, data, sizeof data - 1));
+  EXPECT_EQ(PR_SUCCESS, PR_Close(fd));
 
   /* track file - it should get removed */
   TmpWrapper *tmp = new TmpWrapper;
   tmp->UnlinkAndTrackFile(filename.c_str());
 
   /* Make sure the call removed it. */
-  struct stat statbuf;
-  EXPECT_EQ(-1, stat(filename.c_str(), &statbuf));
+  PRFileInfo info;
+  EXPECT_EQ(PR_FAILURE, PR_GetFileInfo(filename.c_str(), &info));
+  EXPECT_EQ(PR_FILE_NOT_FOUND_ERROR, PR_GetError());
 
   /* create file */
-  fd = open(filename.c_str(), TmpWrapper::kFLAGS, TmpWrapper::kMODE);
-  EXPECT_NE(-1, fd);
-  fs = fdopen(fd, "w");
-  EXPECT_TRUE(fs);
-  ret = fputs("Bla", fs);
-  EXPECT_NE(EOF, ret);
-  fclose(fs);
+  fd = PR_Open(filename.c_str(), TmpWrapper::kFLAGS, TmpWrapper::kMODE);
+  ASSERT_TRUE(fd != NULL);
+  EXPECT_NE(-1, PR_Write(fd, data, sizeof data - 1));
+  EXPECT_EQ(PR_SUCCESS, PR_Close(fd));
 
   /* test it exists */
-  EXPECT_EQ(0, stat(filename.c_str(), &statbuf));
+  EXPECT_EQ(PR_SUCCESS, PR_GetFileInfo(filename.c_str(), &info));
 
   /* and test it goes away */
   delete tmp;
-  ret = stat(filename.c_str(), &statbuf);
-  EXPECT_EQ(-1, ret);
-  EXPECT_EQ(ENOENT, errno);
+  EXPECT_EQ(PR_FAILURE, PR_GetFileInfo(filename.c_str(), &info));
+  EXPECT_EQ(PR_FILE_NOT_FOUND_ERROR, PR_GetError());
 }
 
 } /* namespace */

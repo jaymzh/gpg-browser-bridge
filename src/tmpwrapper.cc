@@ -30,20 +30,21 @@
 
 #include "tmpwrapper.h"
 
-#ifdef OS_WINDOWS
-#include <io.h>
+#include <prerror.h>
+#include <prio.h>
 #include <sys/stat.h>
+
+#ifdef OS_WINDOWS
 #include <tchar.h>
 #include <windows.h>
 #else
-#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <cerrno>
 #endif
 
-#include <fcntl.h>
-#include <stdlib.h>
-
-#include <cerrno>
 #include <cstring>
+#include <string>
 
 #include "gnupg.h"
 #include "logging.h"
@@ -54,11 +55,11 @@
  * other systems it would be an error if a file with the specified name already
  * existed.
  */
-const int TmpWrapper::kFLAGS = O_RDWR|O_CREAT
+const int TmpWrapper::kFLAGS = PR_RDWR|PR_CREATE_FILE
 #ifdef OS_WINDOWS
-                               |O_TRUNC
+                               |PR_TRUNCATE
 #else
-                               |O_EXCL
+                               |PR_EXCL
 #endif
                                    ;
 
@@ -68,7 +69,7 @@ const int TmpWrapper::kFLAGS = O_RDWR|O_CREAT
  */
 const int TmpWrapper::kMODE =
 #ifdef OS_WINDOWS
-                              S_IREAD|S_IWRITE
+                              _S_IREAD|_S_IWRITE
 #else
                               S_IRUSR|S_IWUSR
 #endif
@@ -116,35 +117,43 @@ std::string TmpWrapper::MkTmpFileName(const std::string &pattern) {
 #endif
 }
 
+TmpWrapper::~TmpWrapper() {
+  if (!filename_.empty()) {
+    if (PR_Delete(filename_.c_str()) == PR_FAILURE) {
+      LOG("GPG: PR_Delete failed: %d\n", PR_GetError());
+    }
+  }
+}
+
 bool TmpWrapper::WriteStringToFile(const std::string &text,
                                    const char *filename) {
   LOG("GPG: Writing tempfile %s\n", filename);
-  int fd = open(filename, kFLAGS, kMODE);
 
-  if (fd == -1) {
-    LOG("GPG: Failed to open temp file %s: %s", filename, std::strerror(errno));
+  PRFileDesc *fd = PR_Open(filename, kFLAGS, kMODE);
+  if (fd == NULL) {
+    LOG("GPG: Failed to open temp file %s: %d\n", filename, PR_GetError());
     return false;
   }
-  FILE *fs = fdopen(fd, "w");
-  if (!fs) {
-    close(fd);
-    unlink(filename);
-    LOG("GPG: Failed to fdopen temp fd: %s", std::strerror(errno));
-    return false;
-  }
-  if (fputs(text.c_str(), fs) == -1) {
-    LOG("GPG: Failed to write to tmpfile %s: %s\n", filename,
-        std::strerror(errno));
+
+  if (PR_Write(fd, text.data(), text.size()) == -1) {
+    LOG("GPG: Failed to write to tmpfile %s: %d\n", filename, PR_GetError());
     /*
      * The state here is unknown. We should try to close/unlink the file,
      * but if they error there's nothign we can do, we're already returning
      * an error, so we don't check this.
      */
-    fclose(fs);
-    unlink(filename);
+    if (PR_Close(fd) == PR_FAILURE) {
+      LOG("GPG: PR_Close failed: %d\n", PR_GetError());
+    }
+    if (PR_Delete(filename) == PR_FAILURE) {
+      LOG("GPG: PR_Delete failed: %d\n", PR_GetError());
+    }
     return false;
   }
-  fclose(fs);
+
+  if (PR_Close(fd) == PR_FAILURE) {
+    LOG("GPG: PR_Close failed: %d\n", PR_GetError());
+  }
   return true;
 }
 
@@ -162,6 +171,8 @@ bool TmpWrapper::CreateAndWriteTmpFile(const std::string &content,
 }
 
 void TmpWrapper::UnlinkAndTrackFile(const std::string &filename) {
-  unlink(filename.c_str());
+  if (PR_Delete(filename.c_str()) == PR_FAILURE) {
+    LOG("GPG: PR_Delete failed: %d\n", PR_GetError());
+  }
   filename_ = filename;
 }
