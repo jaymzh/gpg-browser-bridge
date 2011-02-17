@@ -90,13 +90,13 @@ std::string TmpWrapper::MkTmpFileName(const std::string &pattern) {
 
   dwRetVal = GetTempPath(sizeof szTempPath, szTempPath);
   if (dwRetVal == 0 || dwRetVal > sizeof szTempPath) {
-    LOG("GetTempPath() failed.");
+    LOG("GetTempPath() failed.\n");
     return empty;
   }
 
   uRetVal = GetTempFileName(szTempPath, pattern.c_str(), 0, szTempFileName);
   if (uRetVal == 0) {
-    LOG("GetTempFileName() failed.");
+    LOG("GetTempFileName() failed.\n");
     return empty;
   }
 

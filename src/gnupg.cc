@@ -958,9 +958,9 @@ GpgRetString BaseGnupg::SignText(const std::string &rawtext,
 GpgRetDecryptInfo BaseGnupg::DecryptText(const std::string &cipher_text) {
   GpgRetDecryptInfo retobj;
 
-  LOG("GPG: In DecryptText");
+  LOG("GPG: In DecryptText\n");
 
-  LOG("GPG: Opening tmp files");
+  LOG("GPG: Opening tmp files\n");
 
   std::string cipher_file = kTMP_RAW_TEXT;
   TmpWrapper cipher_wrapper;
@@ -1000,7 +1000,7 @@ GpgRetDecryptInfo BaseGnupg::DecryptText(const std::string &cipher_text) {
     if (parsed_output.size() == 0) {
       retobj.set_error_str(kERR_UNKNOWN_GPG_ERR);
     } else if (CheckForSingleOutput(kGPG_DECRYPTION_FAILED, parsed_output)) {
-      LOG(("GPG: Private key not available"));
+      LOG(("GPG: Private key not available\n"));
       retobj.set_error_str(kERR_NO_SECRET_KEY);
     } else if (is_signed) {
       if (CheckForSingleOutput(kGPG_BADSIG, parsed_output)) {
@@ -1009,7 +1009,7 @@ GpgRetDecryptInfo BaseGnupg::DecryptText(const std::string &cipher_text) {
         retobj.set_error_str(kERR_SIGNATURE_ERR);
       }
     } else {
-      LOG("GPG: Decryption failed for unknown reasons, is_signed: %d",
+      LOG("GPG: Decryption failed for unknown reasons, is_signed: %d\n",
           is_signed);
       retobj.set_error_str(kERR_UNKNOWN_GPG_ERR);
     }
@@ -1025,7 +1025,7 @@ GpgRetDecryptInfo BaseGnupg::DecryptText(const std::string &cipher_text) {
   expected.push_back(kGPG_END_DECRYPTION);
 
   if (!CheckForUnorderedOutput(expected, parsed_output)) {
-    LOG(("GPG: CheckRequiredOutput failed for decryption check"));
+    LOG(("GPG: CheckRequiredOutput failed for decryption check\n"));
     retobj.set_error_str(kERR_UNEXPECTED_GPG_OUTPUT);
     return retobj;
   }
@@ -1035,7 +1035,7 @@ GpgRetDecryptInfo BaseGnupg::DecryptText(const std::string &cipher_text) {
     expected.push_back(kGPG_GOODSIG);
     expected.push_back(kGPG_VALIDSIG);
     if (!CheckForUnorderedOutput(expected, parsed_output)) {
-      LOG(("GPG: CheckRequiredOutput failed for signing check (in decrypt)"));
+      LOG(("GPG: CheckRequiredOutput failed for signing check (in decrypt)\n"));
       retobj.set_error_str(kERR_UNEXPECTED_GPG_OUTPUT);
       return retobj;
     }
@@ -1103,7 +1103,7 @@ GpgRetBool BaseGnupg::GetKey(const std::string &keyid,
       LOG("GPG: Key not found\n");
       retobj.set_error_str(kERR_NO_PUBLIC_KEY);
     } else {
-      LOG("GPG: Unknown error in output");
+      LOG("GPG: Unknown error in output\n");
       retobj.set_error_str(kERR_UNKNOWN_GPG_ERR);
     }
     return retobj;
@@ -1388,7 +1388,7 @@ GpgRetBool BaseGnupg::SignUid(const std::string &keyid, const std::string &uid,
     goto unexpected;
   }
 
-  LOG("GPG: Saving key");
+  LOG("GPG: Saving key\n");
   *outstream_ << "save" << std::endl;
 
   WaitOnGpg(process);
