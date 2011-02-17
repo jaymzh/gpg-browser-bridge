@@ -27,18 +27,20 @@ MAC
 0. Prereqs
    You will need the following installed:
    - XCode (or some other way of getting g++ and friends)
-   - scons
+   - SCons
+   - NSPR
+   - GMock
    - GnuPG
 
-   MacPorts is your best bet for scons.
+   MacPorts is your best bet for SCons, NSPR and GMock. If you use a 64-bit
+   machine, you must specify +universal to get both 32- and 64-bit libraries
+   installed:
+
+   sudo port install scons
+   sudo port install nspr +universal
+   sudo port install gmock +universal
+
    GnuPG can be had from http://macgpg.sourceforge.net/ or from MacPorts.
-
-   *If* your gpg binary is somewhere other than /opt/local/bin/gpg, you will
-   need to edit line 83 of src/gnupg.cc and change this:
-
-   #define GPG_PATH "/opt/local/bin/gpg"
-
-   to match wahtever your path is.
 
 1. Build the plugin
    $ cd src && scons
@@ -56,8 +58,8 @@ MAC
    - Safari:
      Open safari, go to Help -> Installed Plugins, and ensure it's there
 
-4. Test
-   See http://www/~fixxxer/gpg_test/gpg_test.html
+4. Unit Test
+   $ scons gnupg_unittest && ./gnupg_unittest
 
 
 WINDOWS
@@ -119,4 +121,3 @@ the extension.
 ======== FURTHER DOCUMENTATION ========
 
 See http://code.google.com/p/gpg-browser-bridge/wiki/Overview
-

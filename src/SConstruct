@@ -44,6 +44,10 @@ if sys.platform == 'win32':
     NSPR_DIR = '/xulrunner-sdk/include'
     RESOURCES = ['npgnupg.rc']
     SOURCES.append('createprocess.cc')
+elif sys.platform == 'darwin':
+    MACPORTS = '/opt/local'
+    NSPR_DIR = MACPORTS + '/include/nspr'
+    RESOURCES = []
 else:
     NSPR_DIR = '/usr/include/nspr'
     RESOURCES = []
@@ -79,7 +83,10 @@ if sys.platform == 'win32':
 elif sys.platform == 'darwin':
   env.Append(CODEGEN = 'codegen.sh',
              CPPDEFINES = ['XP_MACOSX', 'OS_MACOSX'],
+             CPPPATH = [MACPORTS + '/include'],
              CCFLAGS = '-m32',
+             LIBPATH = [MACPORTS + '/lib',
+                        MACPORTS + '/lib/nspr'],
              LINKFLAGS = '-m32 -framework CoreFoundation -framework IOKit')
 else:
   env.Append(CODEGEN = 'codegen.sh',
