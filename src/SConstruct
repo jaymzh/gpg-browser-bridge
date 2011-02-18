@@ -79,7 +79,8 @@ AddPrefixOption('GMock')
 AddIncludeOption('GMock')
 AddLibdirOption('GMock')
 
-AddPrefixOption('GTest')
+if sys.platform != 'win32':
+  AddPrefixOption('GTest')
 AddIncludeOption('GTest')
 AddLibdirOption('GTest')
 
@@ -191,7 +192,7 @@ env.AppendUnique(
         GMOCK_LIB,
         GTEST_LIB,
         ],
-    # Used by codegen.sh and codegen.bat:
+    # Used by codegen.bat and codegen.sh:
     ENV = {'PYTHON': sys.executable},
     )
 
@@ -266,9 +267,11 @@ if plugin_env['CC'] == 'cl':
 # The test should be linked with testing libraries.
 test_env = env.Clone()
 
-if sys.platform == 'win32':
+if test_env['CC'] == 'cl':
+  # Link flags for compatibility with GMock:
   test_env.AppendUnique(LINKFLAGS = ['/LTCG'])
-else:
+
+if sys.platform != 'win32':
   test_env.AppendUnique(LIBS = ['gtest'])
 test_env.AppendUnique(LIBS = ['gmock'])
 
