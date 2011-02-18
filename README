@@ -64,11 +64,56 @@ MAC
 
 WINDOWS
 
-There is currently no windows support. The biggest problem is that we use
-fork()+exec()+pipe() for IPC which isn't natively available in Windows.
+0. Prereqs
+   You will need the following installed:
+   - Microsoft Visual C++
+   - XULRunner
 
-Writing a Windows version of CallGpg() and a matching call to ReadAllGpgOuput()
-and friends (plus adjusting any callers) should be all that's really required.
+   XULRunner is the easiest way to get the NSPR SDK for Windows. It can be
+   downloaded from here:
+
+   http://releases.mozilla.org/pub/mozilla.org/xulrunner/releases/
+
+   (It's however not necessary to get NSPR through XULRunner, see the
+   --with-nspr-include and --with-nspr-libdir options to SCons.)
+
+   You need to download and build GMock yourself. If you have MSVC 2005, then
+   you can just download the latest stable source release from here:
+
+   http://code.google.com/p/googlemock/downloads/list
+
+   Then unzip the source in a directory next to your gpg-browser-bridge
+   directory and build GMock like this:
+
+   cd gmock-1.5.0\msvc
+   msbuild /t:gmock /p:Configuration=Release gmock.sln
+
+   If you have MSVC 2010, then you need to check out revision 357 or later from
+   the Subversion repository as described here:
+
+   http://code.google.com/p/googlemock/source/checkout
+
+   Check out the source to a directory next to your gpg-browser-bridge
+   directory and build GMock like this:
+
+   cd googlemock-read-only\msvc\2010
+   msbuild /t:gmock /p:Configuration=Release gmock.sln
+
+1. Build the plugin and tests
+
+   The default is to look for XULRunner in the root of the current drive. If
+   it's installed somewhere else, specify --with-xulrunner-prefix to SCons.
+
+   If you built GMock from the 1.5.0 source release, just type:
+
+   scons .
+
+   If you built GMock from a Subversion checkout, then type:
+
+   scons --with-gmock-prefix=..\..\googlemock-read-only
+         --with-gmock-libdir=..\..\googlemock-read-only\msvc\2010\Release .
+
+   If compilation succeeds, run the tests by typing "gnupg_unittest.exe".
 
 
 UNITTESTS

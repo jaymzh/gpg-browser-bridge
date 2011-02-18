@@ -1,3 +1,4 @@
+# vim:ft=python
 #
 # * Copyright 2010, Google Inc.
 # *
@@ -30,136 +31,315 @@
 #
 
 import os
+import platform
 import sys
 
-IDL_SOURCES=['types.idl', 'gnupg.idl']
-SOURCES=['gnupg.cc', 'logging.cc', 'plugin.cc', 'prefs.cc', 'tmpwrapper.cc']
-GLUE_SOURCES=['common.cc', 'npn_api.cc', 'main.cc']
+from SCons.Action import CommandAction
+
+#
+# The NSPR, GMock and GTest libraries can be installed in many different
+# locations and have different internal directory structure depending on the
+# platform, version and whether installed by a package manager or built from
+# source. The options below make all these paths configurable on the command
+# line while attempting to provide sensible defaults for most cases.
+#
+
+def AddPathOption(name, id, dest, part, metavar, description):
+  AddOption(
+      '--with-%s-%s' % (id, part),
+      dest = dest,
+      metavar = metavar,
+      type = 'string',
+      help = 'Search for %s %s in %s.' % (name, description, metavar),
+      )
+
+def AddPrefixOption(name):
+  id = name.lower()
+  AddPathOption(name, id, id, 'prefix', 'PREFIX', 'files')
+
+def AddIncludeOption(name):
+  id = name.lower()
+  AddPathOption(name, id, id + '_cpp', 'include', 'DIR', 'header files')
+
+def AddLibdirOption(name):
+  id = name.lower()
+  AddPathOption(name, id, id + '_lib', 'libdir', 'DIR', 'object code libraries')
+
+if sys.platform == 'win32':
+  AddPrefixOption('XULRunner')
+else:
+  if sys.platform == 'darwin':
+    AddPrefixOption('MacPorts')
+  AddPrefixOption('NSPR')
+
+AddIncludeOption('NSPR')
+AddLibdirOption('NSPR')
+
+AddPrefixOption('GMock')
+AddIncludeOption('GMock')
+AddLibdirOption('GMock')
+
+AddPrefixOption('GTest')
+AddIncludeOption('GTest')
+AddLibdirOption('GTest')
+
+#
+# The SCons options framework can't handle default values that depend on the
+# value of other options, so the series of if statements below handle default
+# values to minimize the necessary command line.
+#
+
+def GetDirFromOption(name, *default):
+  option = GetOption(name)
+  return Dir(option is None and Dir(*default) or option)
+
+if sys.platform == 'win32':
+  XULRUNNER = GetDirFromOption('xulrunner', '/xulrunner-sdk')
+  NSPR_CPP = GetDirFromOption('nspr_cpp', 'include', XULRUNNER)
+  NSPR_LIB = GetDirFromOption('nspr_lib', 'lib', XULRUNNER)
+  GMOCK = GetDirFromOption('gmock', '../../gmock-1.5.0')
+  GMOCK_CPP = GetDirFromOption('gmock_cpp', 'include', GMOCK)
+  GMOCK_LIB = GetDirFromOption('gmock_lib', 'msvc/Release', GMOCK)
+  GTEST_CPP = GetDirFromOption('gtest_cpp', 'gtest/include', GMOCK)
+  GTEST_LIB = GetDirFromOption('gtest_lib', GMOCK_LIB)
+else:
+  if sys.platform == 'darwin':
+    MACPORTS = GetDirFromOption('macports', '/opt/local')
+    NSPR = GetDirFromOption('nspr', MACPORTS)
+    NSPR_CPP = GetDirFromOption('nspr_cpp', 'include/nspr', NSPR)
+    NSPR_LIB = GetDirFromOption('nspr_lib', 'lib/nspr', NSPR)
+    GMOCK = GetDirFromOption('gmock', MACPORTS)
+  else:
+    NSPR = GetDirFromOption('nspr', '/usr')
+    NSPR_CPP = GetDirFromOption('nspr_cpp', 'include/nspr', NSPR)
+    NSPR_LIB = GetDirFromOption('nspr_lib', 'lib', NSPR)
+    GMOCK = GetDirFromOption('gmock', '/usr')
+  GMOCK_CPP = GetDirFromOption('gmock_cpp', 'include', GMOCK)
+  GMOCK_LIB = GetDirFromOption('gmock_lib', 'lib', GMOCK)
+  GTEST = GetDirFromOption('gtest', GMOCK)
+  GTEST_CPP = GetDirFromOption('gtest_cpp', 'include', GTEST)
+  GTEST_LIB = GetDirFromOption('gtest_lib', 'lib', GTEST)
+
+#
+# The source files.
+#
+
+IDL_SOURCES = [
+    'gnupg.idl',
+    'types.idl',
+    ]
+
+PLUGIN_SOURCES = [
+    'gnupg.cc',
+    'logging.cc',
+    'plugin.cc',
+    'prefs.cc',
+    'tmpwrapper.cc',
+    ]
+
+GLUE_SOURCES = [
+    'common.cc',
+    'main.cc',
+    'npn_api.cc',
+    ]
+
+TEST_SOURCES = [
+    'gnupg_unittest.cc',
+    'tmpwrapper_unittest.cc',
+    ]
+
 # static_object.cc is a special case since it is required for gnupg_unittest,
 # but including the other NPAPI sources above results in redefinition of
-# methods that are stubbed out in gnupg_unittest.cc (e.g. the NPN_xxx methods).
-STATIC_OBJ_GLUE_SOURCES=['static_object.cc']
+# methods that are stubbed out in gnupg_unittest.cc (e.g. the NPN_xxx methods):
+STATIC_GLUE_SOURCES = ['static_object.cc']
+
+# Only used on Windows:
+RESOURCES = []
 
 if sys.platform == 'win32':
-    NSPR_DIR = '/xulrunner-sdk/include'
-    RESOURCES = ['npgnupg.rc']
-    SOURCES.append('createprocess.cc')
-elif sys.platform == 'darwin':
-    MACPORTS = '/opt/local'
-    NSPR_DIR = MACPORTS + '/include/nspr'
-    RESOURCES = []
-else:
-    NSPR_DIR = '/usr/include/nspr'
-    RESOURCES = []
+  PLUGIN_SOURCES.append('createprocess.cc')
+  RESOURCES.append('npgnupg.rc')
+
+#
+# The build environment.
+#
 
 env = Environment(
-    TARGET_ARCH = 'x86', # Used when building using 64-bit Windows.
+    # Force 32-bit toolchain in 64-bit Windows:
+    TARGET_ARCH = 'x86',
     THIRD_PARTY = '../third_party',
-    NIXYSA_DIR = '$THIRD_PARTY/nixysa/nixysa',
     PRSTREAMS_DIR = '$THIRD_PARTY/prstreams',
-    STATIC_GLUE_DIR = '$NIXYSA_DIR/static_glue/npapi',
+    NIXYSA_DIR = '$THIRD_PARTY/nixysa/nixysa',
     NPAPI_DIR = '$THIRD_PARTY/nixysa/third_party/npapi/include',
-    GLUE_DIR = 'glue',
-    NSPR_DIR = NSPR_DIR,
-    CPPPATH=['.', '$STATIC_GLUE_DIR', '$NPAPI_DIR', '$GLUE_DIR',
-             '$PRSTREAMS_DIR', '$NSPR_DIR'],
-    LIBS=['nspr4']
-)
-env.Append(ENV={'PYTHON': sys.executable})
-if env['CC'] == 'cl':
-    env.Append(CCFLAGS = ['/MT', '/EHsc'])
-    WARNFLAGS = ['/W3']
-else:
-    WARNFLAGS = ['-Wall', '-Werror']
-if sys.platform == 'win32':
-  env.Append(CODEGEN = 'codegen.bat',
-             CPPDEFINES = [
-               '_WINDOWS', # npapi.h: Configure for Windows.
-               '_X86_', # winnt.h: Necessary to define when _WINDOWS is defined.
-               'WIN32_LEAN_AND_MEAN', # windows.h: Exclude rarely-used services.
-               'NOMINMAX', # windef.h: Get standard C++ min() and max().
-               'OS_WINDOWS',
-               'XP_WIN'],
-             LIBPATH = ['/xulrunner-sdk/lib'])
-elif sys.platform == 'darwin':
-  env.Append(CODEGEN = 'codegen.sh',
-             CPPDEFINES = ['OS_MACOSX', 'XP_MACOSX', 'XP_UNIX'],
-             CPPPATH = [MACPORTS + '/include'],
-             CCFLAGS = '-m32',
-             LIBPATH = [MACPORTS + '/lib',
-                        MACPORTS + '/lib/nspr'],
-             LINKFLAGS = '-m32 -framework CoreFoundation -framework IOKit')
-else:
-  env.Append(CODEGEN = 'codegen.sh',
-             CPPDEFINES = ['OS_LINUX', 'XP_UNIX'])
+    GLUE_DIR = '$NIXYSA_DIR/static_glue/npapi',
+    AUTOGEN_DIR = 'autogen',
+    )
 
-# Up to this point, the same Environment is shared between plugin and unittest.
+env.AppendUnique(
+    CPPPATH = [
+        '.',
+        '$PRSTREAMS_DIR',
+        '$NPAPI_DIR',
+        '$GLUE_DIR',
+        '$AUTOGEN_DIR',
+        NSPR_CPP,
+        GMOCK_CPP,
+        GTEST_CPP,
+        ],
+    LIBPATH = [
+        NSPR_LIB,
+        GMOCK_LIB,
+        GTEST_LIB,
+        ],
+    # Used by codegen.sh and codegen.bat:
+    ENV = {'PYTHON': sys.executable},
+    )
+
+if sys.platform == 'win32':
+  env.AppendUnique(
+      CPPDEFINES = [
+          # npapi.h: Configure for Windows:
+          '_WINDOWS',
+          # winnt.h: Necessary to define when _WINDOWS is defined:
+          '_X86_',
+          # windows.h: Exclude rarely-used services:
+          'WIN32_LEAN_AND_MEAN',
+          # windef.h: Get standard C++ min() and max():
+          'NOMINMAX',
+          'OS_WINDOWS',
+          'XP_WIN',
+          ],
+      # This should really be the default, SCons:
+      RCFLAGS = ['/nologo'],
+      CODEGEN = 'codegen.bat',
+      )
+else:
+  if sys.platform == 'darwin':
+    if platform.architecture()[0] == '64bit':
+      env.PrependUnique(
+        CCFLAGS = ['-m32'],  # Build 32-bit binaries in 64-bit Mac OS X.
+        LINKFLAGS = ['-m32'],
+        )
+    env.Append(  # Not unique, -framework must be repeated.
+        CPPDEFINES = ['OS_MACOSX', 'XP_MACOSX'],
+        LINKFLAGS = ['-framework', 'CoreFoundation', '-framework', 'IOKit'],
+        )
+  elif sys.platform == 'linux2':
+    env.AppendUnique(CPPDEFINES = ['OS_LINUX'])
+  env.AppendUnique(
+      CPPDEFINES = ['XP_UNIX'],
+      CODEGEN = 'codegen.sh',
+      )
+
+if env['CC'] == 'cl':
+  env.AppendUnique(CCFLAGS = ['/MT', '/EHsc'])
+
+#
+# Up to this point, the same Environment is shared between all targets but here
+# this Environment is cloned and customized for the different targets.
+#
+
+# The autogenerated code should be compiled without showing warnings.
+nixysa_env = env.Clone()
+
+# The handwritten code should be compiled with a high warning level.
+if env['CC'] == 'cl':
+  env.PrependUnique(CCFLAGS = ['/W3'])
+else:
+  env.PrependUnique(CCFLAGS = ['-Wall', '-Werror'])
+
+# It would be nice if prstreams one day became a standard part of the NSPR
+# library. Until then, we have our own copy of the prstreams source from NSPR
+# and build our own library with this special build rule. Not nice, but works.
+prstrms = env.StaticLibrary(
+    'prstrms',
+    env.SharedObject('$PRSTREAMS_DIR/prstrms.cpp')
+    )
+env.AppendUnique(LIBS = ['nspr4', prstrms])
+
+# The plugin itself might need extra link flags.
+plugin_env = env.Clone()
+
+if plugin_env['CC'] == 'cl':
+  plugin_env.AppendUnique(LINKFLAGS = ['/def:npgnupg.def'])
+
+# The test should be linked with testing libraries.
 test_env = env.Clone()
 
-if env['CC'] == 'cl':
-  env.Append(LINKFLAGS = '/def:npgnupg.def')
+if sys.platform == 'win32':
+  test_env.AppendUnique(LINKFLAGS = ['/LTCG'])
+else:
+  test_env.AppendUnique(LIBS = ['gtest'])
+test_env.AppendUnique(LIBS = ['gmock'])
+
+del env  # Prevent this Environment from being used by mistake later on.
+
+#
+# NIXYSA
+#
+
+NixysaAction = CommandAction([
+    File('$CODEGEN', nixysa_env.subst('$NIXYSA_DIR')).path,
+    '--output-dir=$AUTOGEN_DIR',
+    '--generate=npapi',
+    '$SOURCES',
+    ])
 
 def NixysaEmitter(target, source, env):
   bases = [os.path.splitext(s.name)[0] for s in source] + ['globals']
-  targets = ['$GLUE_DIR/%s_glue.cc' % b for b in bases]
-  targets += ['$GLUE_DIR/%s_glue.h' % b for b in bases]
-  targets += ['$GLUE_DIR/hash', '$GLUE_DIR/parsetab.py']
+  targets = ['$AUTOGEN_DIR/%s_glue.cc' % b for b in bases]
+  targets += ['$AUTOGEN_DIR/%s_glue.h' % b for b in bases]
+  targets += ['$AUTOGEN_DIR/hash', '$AUTOGEN_DIR/parsetab.py']
   return targets, source
 
-NIXYSA_CMDLINE = ' '.join([env.File('$NIXYSA_DIR/$CODEGEN').abspath,
-                           '--output-dir=$GLUE_DIR',
-                           '--generate=npapi',
-                           '$SOURCES'])
+nixysa_env['BUILDERS']['Nixysa'] = Builder(
+    action = NixysaAction,
+    emitter = NixysaEmitter,
+    )
 
-env['BUILDERS']['Nixysa'] = Builder(action=NIXYSA_CMDLINE,
-                                    emitter=NixysaEmitter)
+AUTOGEN_OUTPUT = nixysa_env.Nixysa(IDL_SOURCES)
+AUTOGEN_SOURCES = [f for f in AUTOGEN_OUTPUT if f.suffix == '.cc']
+autogen_objs = [nixysa_env.SharedObject(s) for s in AUTOGEN_SOURCES]
 
-AUTOGEN_OUTPUT = env.Nixysa(IDL_SOURCES)
-AUTOGEN_CC_FILES = [f for f in AUTOGEN_OUTPUT if f.suffix == '.cc']
+glue_objs = [nixysa_env.SharedObject(s) for s in [
+    File(f, nixysa_env.subst('$GLUE_DIR')) for f in GLUE_SOURCES
+    ]]
 
-prstreams = [env.SharedObject('$PRSTREAMS_DIR/prstrms.cpp',
-                              CCFLAGS=env['CCFLAGS'] + WARNFLAGS)]
+static_glue_objs = [nixysa_env.SharedObject(s) for s in [
+    File(f, nixysa_env.subst('$GLUE_DIR')) for f in STATIC_GLUE_SOURCES
+    ]]
 
 #
-# We manually make these objects separately so we can pass in -Wall
-# and -Werror, but not to the generated content
+# PLUGIN
 #
-objs = [env.SharedObject(s, CCFLAGS=env['CCFLAGS'] + WARNFLAGS)
-        for s in SOURCES]
-static_obj_glue_objs = [env.SharedObject(s) for s in ['$STATIC_GLUE_DIR/' + f
-                        for f in STATIC_OBJ_GLUE_SOURCES]]
-glue_objs = [env.SharedObject(s) for s in ['$STATIC_GLUE_DIR/' + f for f in
-               GLUE_SOURCES]]
-nixysa_objs = [static_obj_glue_objs + glue_objs]
-plugin = env.SharedLibrary('npgnupg', AUTOGEN_CC_FILES + objs + prstreams +
-                           nixysa_objs + [env.RES(f) for f in RESOURCES])
 
-# TODO(philames): Create a build rule that will copy
-# src/extensions/common/gpg_common.js to the  appropriate directory for each
-# extension.
+plugin_objs = [plugin_env.SharedObject(s) for s in PLUGIN_SOURCES]
+resources = [plugin_env.RES(r) for r in RESOURCES]
 
+plugin = plugin_env.SharedLibrary(
+    'npgnupg',
+    plugin_objs +
+    autogen_objs +
+    glue_objs +
+    static_glue_objs +
+    resources
+    )
+
+#
 # TESTS
 #
-# Note that it's necessary to use the gtest that comes with gmock (ie. the
-# gtest used to build gmock), and not any random gtest. This should be taken
-# care of for you if you installed the libraries using any decent package
-# system.
-#
-# The nixysa framework makes .o files called .os files... they're *identical*
-# so we compile that into the test instead of *also* building static libraries.
-#
-test_env.Append(LIBS=['gmock'])
 
-if sys.platform == 'win32':
-  test_env.Append(CPPPATH=['../../gmock-1.5.0/gtest/include',
-                           '../../gmock-1.5.0/include'],
-                  LIBPATH=['../../gmock-1.5.0/msvc/Release'],
-                  LINKFLAGS = ['/LTCG'])
-else:
-  test_env.Append(LIBS=['gtest'])
+test_objs = [test_env.SharedObject(s) for s in TEST_SOURCES]
 
-unittest = test_env.Program(target='gnupg_unittest',
-                            source = [objs + prstreams + static_obj_glue_objs,
-                            'gnupg_unittest.cc', 'tmpwrapper_unittest.cc'])
+unittest = test_env.Program(
+    'gnupg_unittest',
+    test_objs +
+    plugin_objs +
+    static_glue_objs
+    )
+
+# TODO(philames):
+# Create a build rule that will copy src/extensions/common/gpg_common.js to the
+# appropriate directory for each extension.
 
 Default(plugin)
