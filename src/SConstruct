@@ -78,11 +78,12 @@ if sys.platform == 'win32':
                '_X86_', # winnt.h: Necessary to define when _WINDOWS is defined.
                'WIN32_LEAN_AND_MEAN', # windows.h: Exclude rarely-used services.
                'NOMINMAX', # windef.h: Get standard C++ min() and max().
-               'OS_WINDOWS'],
+               'OS_WINDOWS',
+               'XP_WIN'],
              LIBPATH = ['/xulrunner-sdk/lib'])
 elif sys.platform == 'darwin':
   env.Append(CODEGEN = 'codegen.sh',
-             CPPDEFINES = ['XP_MACOSX', 'OS_MACOSX'],
+             CPPDEFINES = ['OS_MACOSX', 'XP_MACOSX', 'XP_UNIX'],
              CPPPATH = [MACPORTS + '/include'],
              CCFLAGS = '-m32',
              LIBPATH = [MACPORTS + '/lib',
@@ -90,7 +91,7 @@ elif sys.platform == 'darwin':
              LINKFLAGS = '-m32 -framework CoreFoundation -framework IOKit')
 else:
   env.Append(CODEGEN = 'codegen.sh',
-             CPPDEFINES = ['OS_LINUX'])
+             CPPDEFINES = ['OS_LINUX', 'XP_UNIX'])
 
 # Up to this point, the same Environment is shared between plugin and unittest.
 test_env = env.Clone()
