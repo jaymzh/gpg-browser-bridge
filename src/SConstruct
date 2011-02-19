@@ -158,8 +158,8 @@ STATIC_GLUE_SOURCES = ['static_object.cc']
 RESOURCES = []
 
 if sys.platform == 'win32':
-  PLUGIN_SOURCES.append('createprocess.cc')
-  RESOURCES.append('npgnupg.rc')
+  PLUGIN_SOURCES.append('windows/createprocess.cc')
+  RESOURCES.append('windows/npgnupg.rc')
 
 #
 # The build environment.
@@ -259,7 +259,7 @@ env.AppendUnique(LIBS = ['nspr4', prstrms])
 plugin_env = env.Clone()
 
 if plugin_env['CC'] == 'cl':
-  plugin_env.AppendUnique(LINKFLAGS = ['/def:npgnupg.def'])
+  plugin_env.AppendUnique(LINKFLAGS = [r'/def:windows\npgnupg.def'])
 
 if sys.platform == 'darwin':
   plugin_env.Append(LINKFLAGS = ['-framework', 'CoreFoundation'])

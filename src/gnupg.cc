@@ -71,7 +71,7 @@
 #include "types.h"
 
 #ifdef OS_WINDOWS
-#include "createprocess.h"
+#include "windows/createprocess.h"
 #endif
 
 static const char *kTMP_SIGNED_TEXT = "gpgst";
