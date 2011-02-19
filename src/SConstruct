@@ -221,10 +221,7 @@ else:
         CCFLAGS = ['-m32'],  # Build 32-bit binaries in 64-bit Mac OS X.
         LINKFLAGS = ['-m32'],
         )
-    env.Append(  # Not unique, -framework must be repeated.
-        CPPDEFINES = ['OS_MACOSX', 'XP_MACOSX'],
-        LINKFLAGS = ['-framework', 'CoreFoundation', '-framework', 'IOKit'],
-        )
+    env.AppendUnique(CPPDEFINES = ['OS_MACOSX', 'XP_MACOSX'])
   elif sys.platform == 'linux2':
     env.AppendUnique(CPPDEFINES = ['OS_LINUX'])
   env.AppendUnique(
@@ -263,6 +260,9 @@ plugin_env = env.Clone()
 
 if plugin_env['CC'] == 'cl':
   plugin_env.AppendUnique(LINKFLAGS = ['/def:npgnupg.def'])
+
+if sys.platform == 'darwin':
+  plugin_env.Append(LINKFLAGS = ['-framework', 'CoreFoundation'])
 
 # The test should be linked with testing libraries.
 test_env = env.Clone()
