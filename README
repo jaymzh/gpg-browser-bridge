@@ -127,32 +127,46 @@ And then run them with:
 BROWSER EXTENSION
 
 In order for the plugin to work, it is also necessary to install the
-appropriate browser extension (located in src/extensions/firefox/ or
-src/extensions/chrome).
+appropriate browser extension (located in src/extensions/...).
+
+To prepare the extension directories for packing (or for loading unpacked
+extensions directly from these directories), run the following commands:
+
+scons extensions/chrome
+scons extensions/firefox
+scons extensions/safari
+
+There are also build rules to pack the extensions for Chrome and Firefox:
+
+scons extensions/chrome.crx
+scons extensions/gpg.xpi
+
+(Note that there can't be any already running Chrome instance when packing the
+Chrome extension, and if running on Linux it must be able to connect to an X
+server.)
 
 To install the Firefox extension without building an XPI, in your
 Mozilla profile directory (which will look something like
 ~/.mozilla/firefox/6711k3x8.default/extensions/) create a file named
 'gpg@google' and for the file contents, put the path to the extension, a single
 line such as: /home/user/gpg/opensource/gpg_plugin/src/extensions/firefox/.
-You will also need to copy the 'common/gpg_common.js' file to the 'contents/'
-directory in Firefox.
-
-To create an XPI, run the 'package-firefox.sh' script and then in Firefox,
-click 'File->Open' and navigate to the created gpg.xpi.
 
 To install the Chrome extension, launch Chrome and enter chrome://extensions in
 the address bar.  Ensure that Developer Mode is enabled, and then click the
 'Load Unpacked Extension' button.  Select the directory that contains the
-Chrome extension files.  Please also ensure that you have placed a compiled
-version of libnpgnupg.so (or equivalent) in the extension directory, as well
-as the 'common/gpg_common.js' script.  To create a crx file, once you have
-loaded the unpacked extension, you can click 'pack extension' from the
+Chrome extension files.  To create a crx file, once you have loaded the
+unpacked extension, you can click 'pack extension' from the
 chrome://extensions/ page.
 
 The Safari extension should function properly once the following bug is
 resolved:
 https://bugs.webkit.org/show_bug.cgi?id=44351
+
+To pack the extension (even though it doesn't work yet) use the Safari
+extension builder in order to package and sign the extension.  See
+http://developer.apple.com/safari/library/documentation/Tools/Conceptual/
+SafariExtensionGuide/UsingExtensionBuilder/UsingExtensionBuilder.html
+for additional details.
 
 There are some known limitations between browsers.  None of the browsers
 seem to support dispatching events/passing messages between pages loaded

@@ -33,8 +33,9 @@
 import os
 import platform
 import sys
+import zipfile
 
-from SCons.Action import CommandAction
+import SCons.Action
 
 #
 # The NSPR, GMock and GTest libraries can be installed in many different
@@ -156,6 +157,9 @@ STATIC_GLUE_SOURCES = ['static_object.cc']
 
 # Only used on Windows:
 RESOURCES = []
+
+# JavaScript shared by all extensions:
+COMMON_JS = ['extensions/common/gpg_common.js']
 
 if sys.platform == 'win32':
   PLUGIN_SOURCES.append('windows/createprocess.cc')
@@ -281,7 +285,7 @@ del env  # Prevent this Environment from being used by mistake later on.
 # NIXYSA
 #
 
-NixysaAction = CommandAction([
+NixysaAction = SCons.Action.CommandAction([
     File('$CODEGEN', nixysa_env.subst('$NIXYSA_DIR')).path,
     '--output-dir=$AUTOGEN_DIR',
     '--generate=npapi',
@@ -341,8 +345,55 @@ unittest = test_env.Program(
     static_glue_objs
     )
 
-# TODO(philames):
-# Create a build rule that will copy src/extensions/common/gpg_common.js to the
-# appropriate directory for each extension.
+#
+# EXTENSIONS
+#
+
+ext_env = Environment()
+
+ext_env.Install('extensions/chrome', source = COMMON_JS + plugin)
+ext_env.Install('extensions/firefox/content', source = COMMON_JS)
+ext_env.Install('extensions/safari/gpg.safariextension', source = COMMON_JS)
+
+def XpiAction(target, source, env):
+  zf = zipfile.ZipFile(str(target[0]), 'w', zipfile.ZIP_DEFLATED)
+  root = str(source[0])
+  for dirpath, _, filenames in os.walk(root):
+    for it in filenames:
+      filename = os.path.join(dirpath, it)
+      arcname = os.path.relpath(filename, root)
+      zf.write(filename, arcname)
+  zf.close()
+
+ext_env['BUILDERS']['Xpi'] = Builder(
+    action = XpiAction,
+    source_factory = SCons.Node.FS.Entry,
+    source_scanner = SCons.Defaults.DirScanner,
+    suffix = '.xpi',
+    )
+
+ext_firefox = ext_env.Xpi('extensions/gpg.xpi', ['extensions/firefox'])
+
+# Chrome wants to connect to an X server:
+ext_env.AppendUnique(
+    ENV = {
+        'DISPLAY': os.environ.get('DISPLAY'),
+        'XAUTHORITY': os.environ.get('XAUTHORITY'),
+        },
+    )
+
+CrxAction = SCons.Action.CommandAction([
+   'cd', 'extensions', '&&',
+    os.environ.get('CHROME', 'google-chrome'), '--pack-extension=chrome',
+    ])
+
+ext_env['BUILDERS']['Crx'] = Builder(
+    action = CrxAction,
+    source_factory = SCons.Node.FS.Entry,
+    source_scanner = SCons.Defaults.DirScanner,
+    suffix = '.crx',
+    )
+
+ext_chrome = ext_env.Crx('extensions/chrome.crx', ['extensions/chrome'])
 
 Default(plugin)
