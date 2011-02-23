@@ -75,14 +75,20 @@ else:
 AddIncludeOption('NSPR')
 AddLibdirOption('NSPR')
 
-AddPrefixOption('GMock')
-AddIncludeOption('GMock')
-AddLibdirOption('GMock')
-
-if sys.platform != 'win32':
-  AddPrefixOption('GTest')
-AddIncludeOption('GTest')
-AddLibdirOption('GTest')
+if sys.platform == 'win32':
+  AddPrefixOption('GMock')
+  AddIncludeOption('GMock')
+  AddLibdirOption('GMock')
+  AddIncludeOption('GTest')
+  AddLibdirOption('GTest')
+else:
+  AddOption(
+      '--with-gmock-config',
+      dest = 'gmock_config',
+      metavar = 'BIN',
+      type = 'string',
+      help = 'Use GMock config script BIN.',
+  )
 
 #
 # The SCons options framework can't handle default values that depend on the
@@ -91,8 +97,12 @@ AddLibdirOption('GTest')
 #
 
 def GetDirFromOption(name, *default):
-  option = GetOption(name)
-  return Dir(option is None and Dir(*default) or option)
+  value = GetOption(name)
+  return Dir(value is None and Dir(*default) or value)
+
+def GetFileFromOption(name, *default):
+  value = GetOption(name)
+  return File(value is None and File(*default) or value)
 
 if sys.platform == 'win32':
   XULRUNNER = GetDirFromOption('xulrunner', '/xulrunner-sdk')
@@ -103,23 +113,17 @@ if sys.platform == 'win32':
   GMOCK_LIB = GetDirFromOption('gmock_lib', 'msvc/Release', GMOCK)
   GTEST_CPP = GetDirFromOption('gtest_cpp', 'gtest/include', GMOCK)
   GTEST_LIB = GetDirFromOption('gtest_lib', GMOCK_LIB)
+elif sys.platform == 'darwin':
+  MACPORTS = GetDirFromOption('macports', '/opt/local')
+  NSPR = GetDirFromOption('nspr', MACPORTS)
+  NSPR_CPP = GetDirFromOption('nspr_cpp', 'include/nspr', NSPR)
+  NSPR_LIB = GetDirFromOption('nspr_lib', 'lib/nspr', NSPR)
+  GMOCK_CONFIG = GetFileFromOption('gmock_config', 'bin/gmock-config', MACPORTS)
 else:
-  if sys.platform == 'darwin':
-    MACPORTS = GetDirFromOption('macports', '/opt/local')
-    NSPR = GetDirFromOption('nspr', MACPORTS)
-    NSPR_CPP = GetDirFromOption('nspr_cpp', 'include/nspr', NSPR)
-    NSPR_LIB = GetDirFromOption('nspr_lib', 'lib/nspr', NSPR)
-    GMOCK = GetDirFromOption('gmock', MACPORTS)
-  else:
-    NSPR = GetDirFromOption('nspr', '/usr')
-    NSPR_CPP = GetDirFromOption('nspr_cpp', 'include/nspr', NSPR)
-    NSPR_LIB = GetDirFromOption('nspr_lib', 'lib', NSPR)
-    GMOCK = GetDirFromOption('gmock', '/usr')
-  GMOCK_CPP = GetDirFromOption('gmock_cpp', 'include', GMOCK)
-  GMOCK_LIB = GetDirFromOption('gmock_lib', 'lib', GMOCK)
-  GTEST = GetDirFromOption('gtest', GMOCK)
-  GTEST_CPP = GetDirFromOption('gtest_cpp', 'include', GTEST)
-  GTEST_LIB = GetDirFromOption('gtest_lib', 'lib', GTEST)
+  NSPR = GetDirFromOption('nspr', '/usr')
+  NSPR_CPP = GetDirFromOption('nspr_cpp', 'include/nspr', NSPR)
+  NSPR_LIB = GetDirFromOption('nspr_lib', 'lib', NSPR)
+  GMOCK_CONFIG = GetFileFromOption('gmock_config', 'gmock-config')
 
 #
 # The source files.
@@ -187,14 +191,8 @@ env.AppendUnique(
         '$GLUE_DIR',
         '$AUTOGEN_DIR',
         NSPR_CPP,
-        GMOCK_CPP,
-        GTEST_CPP,
         ],
-    LIBPATH = [
-        NSPR_LIB,
-        GMOCK_LIB,
-        GTEST_LIB,
-        ],
+    LIBPATH = [NSPR_LIB],
     # Used by codegen.bat and codegen.sh:
     ENV = {'PYTHON': sys.executable},
     )
@@ -272,9 +270,18 @@ if test_env['CC'] == 'cl':
   # Link flags for compatibility with GMock:
   test_env.AppendUnique(LINKFLAGS = ['/LTCG'])
 
-if sys.platform != 'win32':
-  test_env.AppendUnique(LIBS = ['gtest'])
-test_env.AppendUnique(LIBS = ['gmock'])
+if sys.platform == 'win32':
+  test_env.AppendUnique(
+      CPPPATH = [GMOCK_CPP, GTEST_CPP],
+      LIBPATH = [GMOCK_LIB, GTEST_LIB],
+      LIBS = ['gmock'],
+  )
+else:
+  test_env.MergeFlags(
+      test_env.ParseFlags(
+          '!' + GMOCK_CONFIG.path + ' --cppflags --cxxflags --ldflags --libs'
+      )
+  )
 
 del env  # Prevent this Environment from being used by mistake later on.
 
