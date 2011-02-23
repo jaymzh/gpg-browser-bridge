@@ -32,9 +32,8 @@ MAC
    - GMock
    - GnuPG
 
-   MacPorts is your best bet for SCons, NSPR and GMock. If you use a 64-bit
-   machine, you must specify +universal to get both 32- and 64-bit libraries
-   installed:
+   MacPorts is your best bet for SCons, NSPR and GMock. Make sure to specify
+   the +universal flag to get both 32- and 64-bit libraries installed:
 
    sudo port install scons
    sudo port install nspr +universal

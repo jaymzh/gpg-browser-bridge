@@ -31,7 +31,6 @@
 #
 
 import os
-import platform
 import sys
 import zipfile
 
@@ -220,11 +219,9 @@ if sys.platform == 'win32':
       )
 else:
   if sys.platform == 'darwin':
-    if platform.architecture()[0] == '64bit':
-      env.PrependUnique(
-        CCFLAGS = ['-m32'],  # Build 32-bit binaries in 64-bit Mac OS X.
-        LINKFLAGS = ['-m32'],
-        )
+    # Build Mach-O universal binaries for these architectures:
+    universal_flags = ['-arch', 'i386', '-arch', 'x86_64']
+    env.Prepend(CCFLAGS = universal_flags, LINKFLAGS = universal_flags)
     env.AppendUnique(CPPDEFINES = ['OS_MACOSX', 'XP_MACOSX'])
   elif sys.platform == 'linux2':
     env.AppendUnique(CPPDEFINES = ['OS_LINUX'])
