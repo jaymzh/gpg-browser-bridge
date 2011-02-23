@@ -60,13 +60,26 @@ bool IsHasPropertyWorkaround() {
   return g_browser_functions.hasproperty == HasPropertyWorkaround;
 }
 
-bool IsPluginThreadAsyncCallSupported() {
-  return (GetMinorVersion(g_browser_functions.version) >=
-          NPVERS_HAS_PLUGIN_THREAD_ASYNC_CALL) &&
-          g_browser_functions.pluginthreadasynccall != NULL;
+bool IsPluginThreadAsyncCallSupported(NPP instance) {
+  if (GetMinorVersion(g_browser_functions.version) <
+      NPVERS_HAS_PLUGIN_THREAD_ASYNC_CALL ||
+      g_browser_functions.pluginthreadasynccall == NULL) {
+    return false;
+  }
+  // Tragically, Safari 5.0+ not only does not support pluginthreadasynccall
+  // but also does not even initialize the field to NULL, so its value is
+  // undefined and thus the previous check can randomly pass. For reliable
+  // operation, we force support to false for Safari. If they ever implement
+  // support for pluginthreadasynccall, we will have to revisit this
+  // work-around and incorporate a version check.
+  // Unfortunately Firefox sometimes returns NULL from NPN_UserAgent(), so we
+  // assume the browser is not Safari if the user agent is NULL.
+  const char *user_agent = NPN_UserAgent(instance);
+  bool is_safari = user_agent &&
+                   strstr(user_agent, "Safari") != NULL &&
+                   strstr(user_agent, "Chrome") == NULL;
+  return !is_safari;
 }
-
-
 
 NPError InitializeNPNApi(NPNetscapeFuncs *funcs) {
   if (!funcs)
@@ -251,11 +264,10 @@ void NP_LOADDS NPN_PluginThreadAsyncCall(NPP instance,
   if (GetMinorVersion(g_browser_functions.version) <
       NPVERS_HAS_PLUGIN_THREAD_ASYNC_CALL)
     return;
-  // NOTE: Safari 4 on Mac OS X claims to support
-  // NPN_PluginThreadAsyncCall but supplies us a NULL function
-  // pointer. Callers of this entry point are responsible for using
-  // IsPluginThreadAsyncCallSupported() to determine whether it's
-  // "really" present.
+  // NOTE: Safari 4 and 5 on Mac OS X claim to support
+  // NPN_PluginThreadAsyncCall but actually don't. Callers of this entry point
+  // are responsible for using IsPluginThreadAsyncCallSupported() to determine
+  // whether it's "really" present.
   g_browser_functions.pluginthreadasynccall(instance, func, user_data);
 }
 
@@ -272,16 +284,7 @@ NPIdentifier NPN_GetStringIdentifier(const NPUTF8 *name) {
 void NPN_GetStringIdentifiers(const NPUTF8 **names,
                               int32_t count,
                               NPIdentifier *identifiers) {
-#ifdef OS_LINUX
-  // GetStringIdentifiers is broken in nspluginwrapper 1.2.0 and 1.2.2 so we
-  // use GetStringIdentifier instead for maximum compatibility. See
-  // https://www.redhat.com/archives/nspluginwrapper-devel-list/2009-June/msg00000.html
-  for (int32_t i = 0; i < count; ++i) {
-    identifiers[i] = NPN_GetStringIdentifier(names[i]);
-  }
-#else
   g_browser_functions.getstringidentifiers(names, count, identifiers);
-#endif
 }
 
 NPIdentifier NPN_GetIntIdentifier(int32_t intid) {
