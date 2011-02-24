@@ -10,6 +10,7 @@
       "js": ["gpg_script.js"]
     }
   ],
+  // TODO(philames): The file name is different on different operating systems:
   "plugins": [
     { "path": "libnpgnupg.so", "public": false }
   ]

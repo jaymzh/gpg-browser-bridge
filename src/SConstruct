@@ -90,6 +90,14 @@ else:
       help = 'Use GMock config script BIN.',
   )
 
+AddOption(
+    '--with-google-chrome',
+    dest = 'google_chrome',
+    metavar = 'BIN',
+    type = 'string',
+    help = 'Use Google Chrome BIN.',
+)
+
 #
 # The SCons options framework can't handle default values that depend on the
 # value of other options, so the series of if statements below handle default
@@ -113,17 +121,26 @@ if sys.platform == 'win32':
   GMOCK_LIB = GetDirFromOption('gmock_lib', 'msvc/Release', GMOCK)
   GTEST_CPP = GetDirFromOption('gtest_cpp', 'gtest/include', GMOCK)
   GTEST_LIB = GetDirFromOption('gtest_lib', GMOCK_LIB)
+  GOOGLE_CHROME = GetFileFromOption(
+      'google_chrome',
+      r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
+      )
 elif sys.platform == 'darwin':
   MACPORTS = GetDirFromOption('macports', '/opt/local')
   NSPR = GetDirFromOption('nspr', MACPORTS)
   NSPR_CPP = GetDirFromOption('nspr_cpp', 'include/nspr', NSPR)
   NSPR_LIB = GetDirFromOption('nspr_lib', 'lib/nspr', NSPR)
   GMOCK_CONFIG = GetFileFromOption('gmock_config', 'bin/gmock-config', MACPORTS)
+  GOOGLE_CHROME = GetFileFromOption(
+      'google_chrome',
+      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      )
 else:
   NSPR = GetDirFromOption('nspr', '/usr')
   NSPR_CPP = GetDirFromOption('nspr_cpp', 'include/nspr', NSPR)
   NSPR_LIB = GetDirFromOption('nspr_lib', 'lib', NSPR)
   GMOCK_CONFIG = GetFileFromOption('gmock_config', 'gmock-config')
+  GOOGLE_CHROME = GetFileFromOption('google_chrome', 'google-chrome')
 
 #
 # The source files.
@@ -415,7 +432,7 @@ ext_env.AppendUnique(
 
 CrxAction = SCons.Action.CommandAction([
    'cd', 'extensions', '&&',
-    os.environ.get('CHROME', 'google-chrome'), '--pack-extension=chrome',
+    GOOGLE_CHROME.path, '--pack-extension=' + Dir('extensions/chrome').abspath,
     ])
 
 ext_env['BUILDERS']['Crx'] = Builder(
