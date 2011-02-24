@@ -161,6 +161,13 @@ The Safari extension should function properly once the following bug is
 resolved:
 https://bugs.webkit.org/show_bug.cgi?id=44351
 
+Also notice that there is a special build target for a Safari version of the
+plugin to work around the facts that Safari doesn't provide NSPR and that NSPR
+can't be statically linked to 32-bit binaries (probably because of some arcane
+bug that might or might not be fixed in the future):
+
+scons libnpgnupg-nspr-64.dylib
+
 To pack the extension (even though it doesn't work yet) use the Safari
 extension builder in order to package and sign the extension.  See
 http://developer.apple.com/safari/library/documentation/Tools/Conceptual/

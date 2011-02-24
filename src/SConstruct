@@ -252,7 +252,7 @@ prstrms = env.StaticLibrary(
     'prstrms',
     env.SharedObject('$PRSTREAMS_DIR/prstrms.cpp')
     )
-env.AppendUnique(LIBS = ['nspr4', prstrms])
+env.AppendUnique(LIBS = ['nspr4'] + prstrms)
 
 # The plugin itself might need extra link flags.
 plugin_env = env.Clone()
@@ -327,14 +327,35 @@ static_glue_objs = [nixysa_env.SharedObject(s) for s in [
 plugin_objs = [plugin_env.SharedObject(s) for s in PLUGIN_SOURCES]
 resources = [plugin_env.RES(r) for r in RESOURCES]
 
-plugin = plugin_env.SharedLibrary(
-    'npgnupg',
+plugin_parts = (
     plugin_objs +
     autogen_objs +
     glue_objs +
     static_glue_objs +
     resources
     )
+
+plugin = plugin_env.SharedLibrary('npgnupg', plugin_parts)
+
+# Safari doesn't provide the NSPR library, like Chrome and Firefox does, so the
+# library needs to be statically linked to the plugin. Unfortunately, it seems
+# like there isn't any way to get the Mach-O linker to select a static version
+# of a library if it can find a dynamic version of it and it also seems like
+# the 32-bit static version of NSPR doesn't work (it causes link errors).
+# Therefore a special version of the plugin is built for Safari (which luckliy
+# is a 64-bit binary on modern machines) by editing the build variables to
+# replace the NSPR link directive with the path to the static library and
+# remove i386 from the included architectures.
+if sys.platform == 'darwin':
+  libs = plugin_env.get('LIBS')
+  nspr = plugin_env.FindFile('libnspr4.a', plugin_env.get('LIBPATH'))
+  libs[libs.index('nspr4')] = nspr
+
+  linkflags = plugin_env.get('LINKFLAGS')
+  i = linkflags.index('i386')
+  del linkflags[i-1:i+1]
+
+  plugin_nspr_64 = plugin_env.SharedLibrary('npgnupg-nspr-64', plugin_parts)
 
 #
 # TESTS
