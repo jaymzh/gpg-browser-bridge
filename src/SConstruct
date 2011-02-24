@@ -123,7 +123,8 @@ if sys.platform == 'win32':
   GTEST_LIB = GetDirFromOption('gtest_lib', GMOCK_LIB)
   GOOGLE_CHROME = GetFileFromOption(
       'google_chrome',
-      r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
+      'Google/Chrome/Application/chrome.exe',
+      os.environ.get('ProgramFiles(x86)', 'C:/Program Files (x86)')
       )
 elif sys.platform == 'darwin':
   MACPORTS = GetDirFromOption('macports', '/opt/local')
