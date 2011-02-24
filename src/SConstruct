@@ -220,9 +220,7 @@ env.AppendUnique(
 if sys.platform == 'win32':
   env.AppendUnique(
       CPPDEFINES = [
-          # npapi.h: Configure for Windows:
-          '_WINDOWS',
-          # winnt.h: Necessary to define when _WINDOWS is defined:
+          # winnt.h: This is a 32-bit build (see TARGET_ARCH above):
           '_X86_',
           # windows.h: Exclude rarely-used services:
           'WIN32_LEAN_AND_MEAN',
