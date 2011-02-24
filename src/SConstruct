@@ -211,7 +211,10 @@ env.AppendUnique(
         ],
     LIBPATH = [NSPR_LIB],
     # Used by codegen.bat and codegen.sh:
-    ENV = {'PYTHON': sys.executable},
+    ENV = {
+        'PYTHON': sys.executable,
+        'PYTHONDONTWRITEBYTECODE': 1,
+        },
     )
 
 if sys.platform == 'win32':
@@ -321,7 +324,6 @@ def NixysaEmitter(target, source, env):
   target += [
       '$AUTOGEN_DIR/hash',
       '$AUTOGEN_DIR/parsetab.py',
-      '$AUTOGEN_DIR/parsetab.pyc',
       'parser.out',
       ]
   return target, source
