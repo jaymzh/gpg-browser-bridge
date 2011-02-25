@@ -432,17 +432,22 @@ ext_env.AppendUnique(
     )
 
 CrxAction = SCons.Action.CommandAction([
-   'cd', 'extensions', '&&',
-    GOOGLE_CHROME.path, '--pack-extension=' + Dir('extensions/chrome').abspath,
+   'cd', '${SOURCE.up()}', '&&',
+    GOOGLE_CHROME.path, '--pack-extension=${SOURCE.abspath}',
     ])
+
+def CrxEmitter(target, source, env):
+  base = target.pop().path
+  target += [File(base + x) for x in ['.crx', '.pem']]
+  return target, source
 
 ext_env['BUILDERS']['Crx'] = Builder(
     action = CrxAction,
+    emitter = CrxEmitter,
     source_factory = SCons.Node.FS.Entry,
     source_scanner = SCons.Defaults.DirScanner,
-    suffix = '.crx',
     )
 
-ext_chrome = ext_env.Crx('extensions/chrome.crx', ['extensions/chrome'])
+ext_chrome = ext_env.Crx('extensions/chrome')
 
 Default(plugin)
