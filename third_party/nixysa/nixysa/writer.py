@@ -41,4 +41,3 @@ def WriteIfContentDifferent(filename, content):
   f.write(content)
   f.close()
   log.Info('Writing %s' % filename)
-
