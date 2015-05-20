@@ -1,6 +1,6 @@
-======== INSTALLATION INSTRUCTIONS ========
+# INSTALLATION INSTRUCTIONS
 
-LINUX
+## LINUX
 
 0. Prereqs
    You will need to have the following installed:
@@ -22,7 +22,7 @@ LINUX
    See http://www/~fixxxer/gpg_test/gpg_test.html
 
 
-MAC
+## MAC
 
 0. Prereqs
    You will need the following installed:
@@ -61,7 +61,7 @@ MAC
    $ scons gnupg_unittest && ./gnupg_unittest
 
 
-WINDOWS
+## WINDOWS
 
 0. Prereqs
    You will need the following installed:
@@ -115,7 +115,7 @@ WINDOWS
    If compilation succeeds, run the tests by typing "gnupg_unittest.exe".
 
 
-UNITTESTS
+# UNITTESTS
 
 If you have gmock and gtest available, you can build unittests with
   $ scons gnupg_unittest
@@ -123,7 +123,7 @@ If you have gmock and gtest available, you can build unittests with
 And then run them with:
   # ./gnupg_unittest
 
-BROWSER EXTENSION
+# BROWSER EXTENSION
 
 In order for the plugin to work, it is also necessary to install the
 appropriate browser extension (located in src/extensions/...).
@@ -181,8 +181,3 @@ the extension code can see that it would have to post a message back to
 a file:// page and create an alert() box telling the user that their operation
 has failed, but on Chrome, the message does not appear to be dispatched to
 the extension.
-
-
-======== FURTHER DOCUMENTATION ========
-
-See http://code.google.com/p/gpg-browser-bridge/wiki/Overview
